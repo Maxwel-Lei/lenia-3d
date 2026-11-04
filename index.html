@@ -56,6 +56,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--grow); outl
 .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .seg3 button { display: grid; gap: 1px; padding: 7px 4px; }
 .seg3 small { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+.seg3 button:disabled { opacity: 0.35; cursor: not-allowed; }
 .row { display: grid; grid-template-columns: 22px 1fr 58px; align-items: center; gap: 10px; }
 .row span { font-family: var(--mono); color: var(--fg); }
 .row output { font-family: var(--mono); text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -82,6 +83,8 @@ input[type=range] { width: 100%; min-width: 0; accent-color: var(--grow); margin
     <button type="button" data-mode="wide" aria-pressed="true"><span>宽敞</span><small>128³ · 多只</small></button>
     <button type="button" data-mode="fine" aria-pressed="false"><span>精细</span><small>128³ · 放大</small></button>
     <button type="button" data-mode="lite" aria-pressed="false"><span>流畅</span><small>64³</small></button>
+    <button type="button" data-mode="x256" aria-pressed="false"><span>256³</span><small>放大 2× · ~1GB</small></button>
+    <button type="button" data-mode="x512" aria-pressed="false"><span>512³</span><small>放大 4× · ~8GB</small></button>
   </div>
   <label class="row" for="rOp"><span>◐</span><input id="rOp" type="range" min="1" max="30" step="0.5" value="4.5"><output id="vOp">4.5</output></label>
   <label class="row" for="rLight"><span>☀</span><input id="rLight" type="range" min="0" max="3" step="0.05" value="1"><output id="vLight">1.00</output></label>
@@ -105,7 +108,7 @@ input[type=range] { width: 100%; min-width: 0; accent-color: var(--grow); margin
     <div><label>帧率</label><output id="oFps">–</output></div>
   </div>
   <p id="hint" hidden></p>
-  <p class="hide-sm">☀ 是光照强度，◐ 是不透明度（越往左越通透）。“宽敞”模式里生物保持原尺寸，空间是“精细”模式的 8 倍，会一次放进好几只、朝向随机。拖动旋转，滚轮缩放，点击空白处再放一只。</p>
+  <p class="hide-sm">☀ 是光照强度，◐ 是不透明度（越往左越通透）。“宽敞”模式里生物保持原尺寸，空间是“精细”模式的 8 倍，会一次放进好几只、朝向随机。世界是首尾相连的：生物从一面出去会从对面进来，“跟随”会把一只生物一直保持在画面中央。拖动旋转，滚轮缩放，点击空白处再放一只。</p>
   <p class="credit">物种数据来自 Bert Chan 的 Lenia 项目（<a href="https://github.com/Chakazul/Lenia" style="color:var(--muted)">github.com/Chakazul/Lenia</a>）。</p>
 </section>
 
@@ -142,10 +145,13 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     return { D, arr };
   }
   // trilinear upsample by an integer factor (Chan zooms species the same way when changing R)
-  function zoom(c, f) {
+  // wrap: per axis, sample periodically instead of padding with zero (for sheets that span the whole world)
+  function zoom(c, f, wrap = [false, false, false]) {
     if (f === 1) return c;
     const [Z, Y, X] = c.D, D = [Z * f, Y * f, X * f], out = new Float32Array(D[0] * D[1] * D[2]);
-    const g = (z, y, x) => (z < 0 || y < 0 || x < 0 || z >= Z || y >= Y || x >= X) ? 0 : c.arr[(z * Y + y) * X + x];
+    const w = (v, n, k) => wrap[k] ? ((v % n) + n) % n : v;
+    const g = (z, y, x) => { z = w(z, Z, 0); y = w(y, Y, 1); x = w(x, X, 2);
+      return (z < 0 || y < 0 || x < 0 || z >= Z || y >= Y || x >= X) ? 0 : c.arr[(z * Y + y) * X + x]; };
     for (let z = 0; z < D[0]; z++) { const fz = (z + 0.5) / f - 0.5, z0 = Math.floor(fz), tz = fz - z0;
       for (let y = 0; y < D[1]; y++) { const fy = (y + 0.5) / f - 0.5, y0 = Math.floor(fy), ty = fy - y0;
         for (let x = 0; x < D[2]; x++) { const fx = (x + 0.5) / f - 0.5, x0 = Math.floor(fx), tx = fx - x0;
@@ -202,13 +208,20 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     return mix(texture(s, (o0 + xy + 0.5) / ATLAS), texture(s, (o1 + xy + 0.5) / ATLAS), fz);
   }`;
 
+  const MAXTEX = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  // slices per atlas row: the most square layout that fits the texture limit
+  function atlasTX(n) { let best = 0, bd = 1e9; for (let tx = 1; tx <= n; tx *= 2) { const w = n * tx, h = n * (n / tx); if (w <= MAXTEX && h <= MAXTEX && Math.abs(Math.log2(w / h)) < bd) { bd = Math.abs(Math.log2(w / h)); best = tx; } } return best; }
+  let STEPC = 1, MAXS = 300;
   function setRes(n, z) {
     [state, stateB, fa, fb, kHat, coarse, ...(views || [])].forEach(t => t && t.free());
-    N = n; TX = n === 128 ? 16 : 8; AW = N * TX; AH = N * (N / TX); LOG = Math.log2(N); NNN = N * N * N; Z = z; CF = N / 64;
+    N = n; TX = atlasTX(n); if (!TX) throw new Error('texture-limit');
+    AW = N * TX; AH = N * (N / TX); LOG = Math.log2(N); NNN = N * N * N; Z = z; CF = N / 64;
+    STEPC = N >= 512 ? 2.0 : N >= 256 ? 1.5 : 1.0; MAXS = Math.ceil(3.6 * (N / 2) / STEPC) + 20;
     const RG = () => tex(AW, AH, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST);
     state = RG(); stateB = RG(); fa = RG(); fb = RG(); kHat = RG();
     views = [tex(AW, AH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR), tex(AW, AH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR)]; vi = 0;
     coarse = tex(MW, MH, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    if (gl.getError() === gl.OUT_OF_MEMORY || gl.isContextLost()) throw new Error('oom');
     const A = atlasGLSL(N, TX, AW, AH);
     P.fft = compile(`#version 300 es
     precision highp float; precision highp int; ${A}
@@ -223,6 +236,19 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       vec2 e = rd(ce), d = rd(co);
       float a = uSign * 6.283185307179586 * idx / uSub; vec2 w = vec2(cos(a), sin(a));
       o = vec4(e + vec2(w.x * d.x - w.y * d.y, w.x * d.y + w.y * d.x), 0.0, 1.0);
+    }`);
+    P.kern = compile(`#version 300 es
+    precision highp float; precision highp int; ${A}
+    uniform float uR, uInv; uniform float uB[4]; uniform int uK; out vec4 o;
+    void main(){
+      ivec3 c = cellOf(gl_FragCoord.xy);
+      vec3 d = vec3(c); d -= float(N) * step(float(N / 2) + 0.5, d);
+      float D = length(d) / uR, v = 0.0;
+      if (D > 0.0 && D < 1.0) {
+        float br = D * float(uK); int i = min(uK - 1, int(floor(br))); float f = br - floor(br);
+        if (f > 0.0 && f < 1.0) v = uB[i] * exp(4.0 - 1.0 / (f * (1.0 - f)));
+      }
+      o = vec4(v * uInv, 0.0, 0.0, 1.0);
     }`);
     P.mul = compile(`#version 300 es
     precision highp float; uniform sampler2D tA, tK; uniform int uCopy; out vec4 o;
@@ -299,10 +325,10 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       vec2 tr; float hit; boxClip(uCam, rd, tr, hit); tr.x = max(tr.x, 0.0);
       vec3 sum = vec3(0.0); float T = 1.0;
       // step ≈ 0.7 cell, so finer grids get finer sampling
-      float stepW = min(0.04, 1.0 / uSpan);
+      float stepW = min(0.04, ${STEPC.toFixed(2)} / uSpan);
       if (hit > 0.5) {
         float t = tr.x + stepW * hash12(gl_FragCoord.xy + fract(uTime) * 37.0);
-        for (int i = 0; i < 300; i++) {
+        for (int i = 0; i < ${MAXS}; i++) {
           if (t > tr.y || T < 0.012) break;
           vec3 wp = uCam + rd * t;
           if (wp.x <= uCut) {
@@ -351,7 +377,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     if (inp !== fa) { const t = fa; fa = fb; fb = t; }
   }
 
-  const params = { mu: 0.15, sg: 0.015, T: 10, spd: 2, paused: false, cut: 1, follow: false, span: 32, opacity: 4.5, light: 1, mode: 'wide', trail: true, vec: false };
+  const params = { mu: 0.15, sg: 0.015, T: 10, spd: 2, paused: false, cut: 1, follow: true, span: 32, opacity: 4.5, light: 1, mode: 'wide', trail: true, vec: false };
   let stepsThisFrame = 0, stepsSinceLight = 0, frameNo = 0;
   let steps = 0, sp = null;
   function simStep() {
@@ -368,37 +394,43 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   }
   function buildKernel(R, b) {
     const bs = String(b).split(',').map(v => { const [p, q] = v.split('/'); return q ? +p / +q : +p; });
-    const k = bs.length, data = new Float32Array(AW * AH * 2), rr = Math.ceil(R);
-    let sum = 0; const vals = [];
+    const k = bs.length, rr = Math.ceil(R);
+    // the normalising sum is cheap on the CPU (only the ball of radius R); the full grid is filled on the GPU
+    let sum = 0;
     for (let dz = -rr; dz <= rr; dz++) for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr; dx <= rr; dx++) {
       const D = Math.sqrt(dx * dx + dy * dy + dz * dz) / R; if (D >= 1 || D === 0) continue;
       const br = D * k, i = Math.min(k - 1, Math.floor(br)), f = br % 1;
-      const v = f > 0 && f < 1 ? bs[i] * Math.exp(4 - 1 / (f * (1 - f))) : 0;
-      if (v > 0) { vals.push([(dx + N) % N, (dy + N) % N, (dz + N) % N, v]); sum += v; }
+      if (f > 0 && f < 1) sum += bs[i] * Math.exp(4 - 1 / (f * (1 - f)));
     }
-    for (const [x, y, z, v] of vals) data[cellPix(x, y, z) * 2] = v / sum;
-    const tmp = tex(AW, AH, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST); uploadRG(tmp, data);
+    const B4 = new Float32Array(4); bs.forEach((v, i) => { if (i < 4) B4[i] = v; });
+    // fa is free here: write the kernel into it, then transform it in place
+    pass(P.kern, fb, u => { gl.uniform1f(u.uR, R); gl.uniform1f(u.uInv, 1 / sum); gl.uniform1fv(u.uB, B4); gl.uniform1i(u.uK, Math.min(4, k)); });
+    const tmp = fb;
     fft3(tmp, -1, true);
     pass(P.mul, kHat, u => { bindTex(0, fa.t, u.tA); bindTex(1, fa.t, u.tK); gl.uniform1i(u.uCopy, 1); });
-    tmp.free();
   }
 
   // ---------- placing creatures ----------
-  let rbFull = null;
-  function readStateFull() {
-    if (!rbFull || rbFull.length !== AW * AH * 4) rbFull = new Float32Array(AW * AH * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, state.f); gl.readPixels(0, 0, AW, AH, gl.RGBA, gl.FLOAT, rbFull); return rbFull;
-  }
+  function clearState() { gl.bindFramebuffer(gl.FRAMEBUFFER, state.f); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); }
+  const segs = (start, len) => { const a = ((start % N) + N) % N; return a + len <= N ? [[a, 0, len]] : [[a, 0, N - a], [0, N - a, len - (N - a)]]; };
   function place(c, at, keep) {
-    const data = new Float32Array(AW * AH * 2);
-    if (keep) { const f = readStateFull(); for (let i = 0, j = 0; j < data.length; i += 4, j += 2) { data[j] = f[i]; data[j + 1] = f[i + 1]; } }
+    if (!keep) clearState();
     const [dz, dy, dx] = c.D;
-    for (let z = 0; z < dz; z++) for (let y = 0; y < dy; y++) for (let x = 0; x < dx; x++) {
-      const v = c.arr[(z * dy + y) * dx + x]; if (!v) continue;
-      const X = ((Math.round(at[0] - dx / 2) + x) % N + N) % N, Y = ((Math.round(at[1] - dy / 2) + y) % N + N) % N, Zz = ((Math.round(at[2] - dz / 2) + z) % N + N) % N;
-      const p = cellPix(X, Y, Zz) * 2; data[p] = Math.max(data[p], v);
+    const X0 = Math.round(at[0] - dx / 2), Y0 = Math.round(at[1] - dy / 2), Z0 = Math.round(at[2] - dz / 2);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, state.f); gl.bindTexture(gl.TEXTURE_2D, state.t);
+    for (let z = 0; z < dz; z++) {
+      const Zz = ((Z0 + z) % N + N) % N, ox = (Zz % TX) * N, oy = ((Zz / TX) | 0) * N;
+      for (const [xs, xo, xl] of segs(X0, dx)) for (const [ys, yo, yl] of segs(Y0, dy)) {
+        const out = new Float32Array(xl * yl * 2);
+        let old = null;
+        if (keep) { old = new Float32Array(xl * yl * 4); gl.readPixels(ox + xs, oy + ys, xl, yl, gl.RGBA, gl.FLOAT, old); }
+        for (let y = 0; y < yl; y++) for (let x = 0; x < xl; x++) {
+          const v = c.arr[(z * dy + (yo + y)) * dx + (xo + x)], q = y * xl + x;
+          out[q * 2] = old ? Math.max(old[q * 4], v) : v; out[q * 2 + 1] = old ? old[q * 4 + 1] : 0;
+        }
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, ox + xs, oy + ys, xl, yl, gl.RG, gl.FLOAT, out);
+      }
     }
-    uploadRG(state, data);
   }
 
   // ---------- UI ----------
@@ -423,11 +455,21 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   const randOrient = c => orient(c, PERMS[(Math.random() * 6) | 0], [0, 1, 2].map(() => Math.random() < 0.5));
   function choose(i) {
     sp = SPECIES[i]; sp.base = sp.base || rle2arr(sp.cells);
-    const cells = zoom(sp.base, Z);
+    // a species as wide as its native 64³ world on some axis is a periodic sheet (the flying membrane).
+    // In a bigger world it would have free edges and fall apart, so repeat it along those axes to fill the world.
+    const per = sp.base.D.map(d => d === 64), reps = Math.max(1, Math.round(N / (64 * Z)));
+    let base = sp.base;
+    if (reps > 1 && per.some(Boolean)) {
+      const D = base.D.map((d, k) => per[k] ? d * reps : d), arr = new Float32Array(D[0] * D[1] * D[2]);
+      for (let z = 0; z < D[0]; z++) for (let y = 0; y < D[1]; y++) for (let x = 0; x < D[2]; x++)
+        arr[(z * D[1] + y) * D[2] + x] = base.arr[((z % base.D[0]) * base.D[1] + (y % base.D[1])) * base.D[2] + (x % base.D[2])];
+      base = { D, arr };
+    }
+    const cells = zoom(base, Z, per);
     const p = sp.params; params.mu = p.m; params.sg = p.s; params.T = p.T;
     const size = Math.max(...cells.D);
     params.spanNear = Math.max(13 * Z, Math.min(N / 2, size * 1.25));
-    params.span = params.follow ? params.spanNear : N / 2;
+    params.span = MULTI.has(params.mode) ? N / 2 : params.follow ? params.spanNear : N / 2;
     rMu.min = (p.m * 0.8).toFixed(4); rMu.max = (p.m * 1.2).toFixed(4); rMu.value = p.m;
     rSg.min = (p.s * 0.6).toFixed(4); rSg.max = (p.s * 1.6).toFixed(4); rSg.value = p.s;
     $('vMu').textContent = p.m.toFixed(4); $('vSg').textContent = p.s.toFixed(4);
@@ -437,7 +479,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     buildKernel(p.R * Z, p.b);
     sp.cur = cells;
     // how many fit: keep copies about 3 kernel radii apart; huge species (the membrane) get one
-    const minD = 3.0 * p.R * Z, count = params.mode === 'wide' && size < N / 3 ? Math.min(6, Math.floor(N * N * N / Math.pow(minD * 1.25, 3))) : 1;
+    const minD = 3.0 * p.R * Z, count = MULTI.has(params.mode) && size < N / 3 ? Math.min(N >= 256 ? 8 : 6, Math.floor(N * N * N / Math.pow(minD * 1.25, 3))) : 1;
     const spots = [[N / 2, N / 2, N / 2]];
     for (let tries = 0; spots.length < count && tries < 4000; tries++) {
       const q = [Math.random() * N, Math.random() * N, Math.random() * N];
@@ -445,7 +487,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     }
     place(cells, spots[0], false);
     for (let k = 1; k < spots.length; k++) place(randOrient(cells), spots[k], true);
-    steps = 0; follow = [0, 0, 0]; followTarget = [0, 0, 0]; tracked = []; lastCensusStep = 0; stepsSinceLight = 0;
+    steps = 0; follow = [0, 0, 0]; followTarget = [0, 0, 0]; tracked = []; lastMerged = []; lastCensusStep = 0; stepsSinceLight = 0;
     gl.clearColor(0, 0, 0, 0); for (const v of views) { gl.bindFramebuffer(gl.FRAMEBUFFER, v.f); gl.clear(gl.COLOR_BUFFER_BIT); }
     for (let k = 0; k < 2; k++) relight();
   }
@@ -459,18 +501,29 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   const bFollow = $('bFollow'), bPause = $('bPause'), bTrail = $('bTrail'), bVec = $('bVec');
   bTrail.addEventListener('click', () => { params.trail = !params.trail; bTrail.setAttribute('aria-pressed', String(params.trail)); });
   bVec.addEventListener('click', () => { params.vec = !params.vec; bVec.setAttribute('aria-pressed', String(params.vec)); });
-  bFollow.addEventListener('click', () => { params.follow = !params.follow; bFollow.setAttribute('aria-pressed', String(params.follow)); params.span = params.follow ? params.spanNear : N / 2; if (!params.follow) follow = [0, 0, 0]; });
+  bFollow.addEventListener('click', () => { params.follow = !params.follow; bFollow.setAttribute('aria-pressed', String(params.follow)); params.span = params.follow && !MULTI.has(params.mode) ? params.spanNear : N / 2; });
   bPause.addEventListener('click', () => { params.paused = !params.paused; bPause.setAttribute('aria-pressed', String(params.paused)); bPause.querySelector('span').textContent = params.paused ? '继续' : '暂停'; });
-  const MODES = { wide: [128, 1], fine: [128, 2], lite: [64, 1] };
+  const MODES = { wide: [128, 1], fine: [128, 2], lite: [64, 1], x256: [256, 2], x512: [512, 4] };
+  const MULTI = new Set(['wide', 'x256', 'x512']);
+  // grey out sizes this GPU's texture limit cannot hold
+  document.querySelectorAll('[data-mode]').forEach(b => { if (!atlasTX(MODES[b.dataset.mode][0])) { b.disabled = true; b.title = `这块显卡的纹理上限是 ${MAXTEX}，放不下这个尺寸`; } });
   function setMode(m, first) {
     if (!first && m === params.mode) return;
-    params.mode = m; const [n, z] = MODES[m];
-    const i = sp ? SPECIES.indexOf(sp) : 0; setRes(n, z);
-    params.follow = m !== 'wide'; bFollow.setAttribute('aria-pressed', String(params.follow));
+    const [n, z] = MODES[m];
+    const i = sp ? SPECIES.indexOf(sp) : 0; let fellBack = false;
+    try { setRes(n, z); }
+    catch (err) {
+      // not enough video memory or too large a texture: fall back to the comfortable default
+      $('hint').textContent = `${n}³ 没能分配显存（${err.message === 'texture-limit' ? '超出纹理尺寸上限' : '显存不足'}），已退回 128³。`; $('hint').hidden = false;
+      if (m !== 'wide') { params.mode = 'wide'; setRes(128, 1); } else throw err;
+      m = 'wide'; fellBack = true;
+    }
+    params.mode = m;
+    params.follow = true; bFollow.setAttribute('aria-pressed', String(params.follow));
     document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
     choose(i); for (let k = 0; k < 4; k++) relight();
-    params.spd = n === 128 ? 2 : 4; $('rSpd').value = params.spd; $('vSpd').textContent = `${params.spd} 步/帧`;
-    slow = 0; $('hint').hidden = true;
+    params.spd = { 64: 4, 128: 2, 256: 2, 512: 1 }[N]; $('rSpd').value = params.spd; $('vSpd').textContent = `${params.spd} 步/帧`;
+    slow = 0; if (!fellBack) $('hint').hidden = true;
   }
   document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
@@ -533,20 +586,22 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       if (host) { const d = pd(f.c, host.c), t = f.m / (host.m + f.m); host.c = host.c.map((v, k) => v + d[k] * t); host.m += f.m; host.n += f.n; }
       else merged.push({ c: f.c.slice(), m: f.m, n: f.n });
     }
-    blobs = merged.length;
+    blobs = merged.length; lastMerged = merged;
     track(merged);
     $('oMass').textContent = m < 1 ? '0' : m >= 10000 ? (m / 1000).toFixed(1) + 'k' : m.toFixed(0);
     $('oBlobs').textContent = m < 1 ? '灭绝' : blobs > 0 ? String(blobs) : '–';
-    if (m > 1) {
-      const ang = (c, s) => ((Math.atan2(s, c) / tw) % M + M) % M;
-      const com = [ang(S[0], S[1]), ang(S[2], S[3]), ang(S[4], S[5])].map(v => (v + 0.5) * CF - 0.5);
-      followTarget = com.map((v, i) => { let d = v - N / 2 - follow[i]; d -= N * Math.round(d / N); return follow[i] + d; });
+    if (m > 1 && lastMerged.length) {
+      // follow one creature: the one nearest the current view centre, so the camera never hops between them
+      const centre = follow.map(v => N / 2 + v);
+      let best = lastMerged[0], bd = 1e9;
+      for (const g of lastMerged) { const d = Math.hypot(...pd(g.c, centre)); if (d < bd) { bd = d; best = g; } }
+      followTarget = best.c.map((v, i) => { let d = v - N / 2 - follow[i]; d -= N * Math.round(d / N); return follow[i] + d; });
     }
     return m;
   }
 
   // match creatures between censuses by nearest centroid (periodic), giving a velocity in cells per step
-  let tracked = [], lastCensusStep = 0;
+  let tracked = [], lastCensusStep = 0, lastMerged = [];
   const pd = (a, b) => a.map((v, k) => { let d = v - b[k]; d -= N * Math.round(d / N); return d; });
   function track(found) {
     const ds = steps - lastCensusStep; lastCensusStep = steps;
@@ -635,8 +690,8 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       const fps = frames / acc; $('oFps').textContent = fps.toFixed(0); frames = 0; acc = 0;
       const ns = fps < 28 ? Math.max(0.35, scale - 0.07) : fps > 56 ? Math.min(0.85, scale + 0.04) : scale;
       if (Math.abs(ns - scale) > 0.01) { scale = ns; resize(); }
-      slow = N === 128 && fps < 18 ? slow + 1 : 0;
-      if (slow >= 3) { $('hint').textContent = '这台电脑跑 128³ 有些吃力，可以切到“流畅”或把 ⏵ 调低。'; $('hint').hidden = false; }
+      slow = N >= 128 && fps < 18 ? slow + 1 : 0;
+      if (slow >= 3) { $('hint').textContent = `这台电脑跑 ${N}³ 有些吃力，可以换小一档的世界或把 ⏵ 调低。`; $('hint').hidden = false; }
     }
     requestAnimationFrame(frame);
   }
