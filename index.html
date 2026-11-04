@@ -197,7 +197,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   // ---------- everything that depends on the grid size ----------
   const M = 64, MT = 8, MW = M * MT, MH = M * (M / MT);      // coarse census grid, always 64³
   let N, TX, AW, AH, LOG, NNN, Z, CF;                        // Z = creature zoom; CF = grid / 64 (census block size)
-  let state, stateB, fa, fb, kHat, views, vi, coarse, P = {};
+  let state, stateB, fa, fb, kHat, views, vi, coarse, occA, occB, twTex = null, P = {};
   const cellPix = (x, y, z) => ((((z / TX) | 0) * N + y) * AW + (z % TX) * N + x);
   const atlasGLSL = (n, tx, aw, ah) => `
   #define N ${n}
@@ -205,46 +205,77 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   const vec2 ATLAS = vec2(${aw}.0, ${ah}.0);
   ivec3 cellOf(vec2 fc){ ivec2 f = ivec2(fc); int tx = f.x / N, ty = f.y / N; return ivec3(f.x - tx*N, f.y - ty*N, ty*TX + tx); }
   ivec2 texOf(ivec3 c){ c = (c % N + N) % N; return ivec2((c.z % TX)*N + c.x, (c.z / TX)*N + c.y); }
+  // periodic trilinear sample (c in cell units). x/y must wrap like z does: clamping them smeared the
+  // outermost slice into long pillars whenever the view window crossed the world's seam.
   vec4 sampleC(sampler2D s, vec3 c){
     c = c - 0.5;
-    float z0 = floor(c.z); float fz = c.z - z0;
-    int iz0 = (int(z0) % N + N) % N, iz1 = (iz0 + 1) % N;
-    vec2 xy = clamp(c.xy, vec2(0.0), vec2(float(N) - 1.0));
-    vec2 o0 = vec2(float(iz0 % TX) * float(N), float(iz0 / TX) * float(N));
-    vec2 o1 = vec2(float(iz1 % TX) * float(N), float(iz1 / TX) * float(N));
-    return mix(texture(s, (o0 + xy + 0.5) / ATLAS), texture(s, (o1 + xy + 0.5) / ATLAS), fz);
+    vec3 fl = floor(c), t = c - fl;
+    ivec3 i0 = (ivec3(fl) % N + N) % N;
+    int iz1 = (i0.z + 1) % N;
+    ivec2 o0 = ivec2((i0.z % TX) * N, (i0.z / TX) * N), o1 = ivec2((iz1 % TX) * N, (iz1 / TX) * N);
+    if (i0.x < N - 1 && i0.y < N - 1) {
+      // inside a tile: let the hardware do the x/y interpolation
+      vec2 xy = vec2(i0.xy) + t.xy + 0.5;
+      return mix(texture(s, (vec2(o0) + xy) / ATLAS), texture(s, (vec2(o1) + xy) / ATLAS), t.z);
+    }
+    // on the seam: wrap x/y by hand
+    ivec2 a = i0.xy, b = (i0.xy + 1) % N;
+    vec4 c00 = mix(texelFetch(s, o0 + ivec2(a.x, a.y), 0), texelFetch(s, o0 + ivec2(b.x, a.y), 0), t.x);
+    vec4 c01 = mix(texelFetch(s, o0 + ivec2(a.x, b.y), 0), texelFetch(s, o0 + ivec2(b.x, b.y), 0), t.x);
+    vec4 c10 = mix(texelFetch(s, o1 + ivec2(a.x, a.y), 0), texelFetch(s, o1 + ivec2(b.x, a.y), 0), t.x);
+    vec4 c11 = mix(texelFetch(s, o1 + ivec2(a.x, b.y), 0), texelFetch(s, o1 + ivec2(b.x, b.y), 0), t.x);
+    return mix(mix(c00, c01, t.y), mix(c10, c11, t.y), t.z);
   }`;
 
   const MAXTEX = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   // slices per atlas row: the most square layout that fits the texture limit
   function atlasTX(n) { let best = 0, bd = 1e9; for (let tx = 1; tx <= n; tx *= 2) { const w = n * tx, h = n * (n / tx); if (w <= MAXTEX && h <= MAXTEX && Math.abs(Math.log2(w / h)) < bd) { bd = Math.abs(Math.log2(w / h)); best = tx; } } return best; }
-  let STEPC = 1, MAXS = 300, LSAMP = 12;
+  let STEPC = 1, MAXS = 300, LSAMP = 12, RADIX = [];
   function setRes(n, z) {
     abortJob();
-    [state, stateB, fa, fb, kHat, coarse, ...(views || [])].forEach(t => t && t.free());
+    [state, stateB, fa, fb, kHat, coarse, occA, occB, ...(views || [])].forEach(t => t && t.free());
     N = n; TX = atlasTX(n); if (!TX) throw new Error('texture-limit');
     AW = N * TX; AH = N * (N / TX); LOG = Math.log2(N); NNN = N * N * N; Z = z; CF = N / 64;
     STEPC = N >= 512 ? 2.5 : N >= 256 ? 1.5 : 1.0; MAXS = Math.ceil(3.6 * (N / 2) / STEPC) + 20;
-    LSAMP = N >= 512 ? 6 : N >= 256 ? 8 : 12;
+    LSAMP = N >= 512 ? 6 : N >= 256 ? 8 : 12; RADIX = radixPlan(N);
     const RG = () => tex(AW, AH, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST);
     state = RG(); stateB = RG(); fa = RG(); fb = RG(); kHat = RG();
+    if (twTex) gl.deleteTexture(twTex);
+    { const tw = new Float32Array(N * 2); for (let t = 0; t < N; t++) { tw[2 * t] = Math.cos(2 * Math.PI * t / N); tw[2 * t + 1] = -Math.sin(2 * Math.PI * t / N); }
+      twTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, twTex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, N, 1, 0, gl.RG, gl.FLOAT, tw);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); }
     views = [tex(AW, AH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR), tex(AW, AH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR)]; vi = 0;
     coarse = tex(MW, MH, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    occA = tex(MW, MH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.NEAREST); occB = tex(MW, MH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.NEAREST);
     if (gl.getError() === gl.OUT_OF_MEMORY || gl.isContextLost()) throw new Error('oom');
-    const A = atlasGLSL(N, TX, AW, AH);
+    const A = atlasGLSL(N, TX, AW, AH), COARSE = `
+    const ivec2 _cm = ivec2(${M}, ${MT});
+    ivec2 cTexOf(ivec3 c){ c = (c % ${M} + ${M}) % ${M}; return ivec2((c.z % ${MT}) * ${M} + c.x, (c.z / ${MT}) * ${M} + c.y); }
+    ivec3 cCellOf(vec2 fc){ ivec2 f = ivec2(fc); int tx = f.x / ${M}, ty = f.y / ${M}; return ivec3(f.x - tx * ${M}, f.y - ty * ${M}, ty * ${MT} + tx); }`;
     P.fft = compile(`#version 300 es
     precision highp float; precision highp int; ${A}
-    uniform sampler2D tIn; uniform int uAxis; uniform float uSub; uniform float uSign; uniform int uReal;
+    uniform sampler2D tIn, tTw; uniform int uAxis; uniform int uLs; uniform int uR; uniform float uSign; uniform int uReal;
     out vec4 o;
     vec2 rd(ivec3 c){ vec4 v = texelFetch(tIn, texOf(c), 0); return uReal == 1 ? vec2(v.x, 0.0) : v.xy; }
+    // one radix-r Stockham stage; each fragment computes its own output of the r-point butterfly
     void main(){
       ivec3 c = cellOf(gl_FragCoord.xy);
-      float idx = float(c[uAxis]), h = uSub * 0.5;
-      float ev = floor(idx / uSub) * h + mod(idx, h);
-      ivec3 ce = c, co = c; ce[uAxis] = int(ev); co[uAxis] = int(ev) + N / 2;
-      vec2 e = rd(ce), d = rd(co);
-      float a = uSign * 6.283185307179586 * idx / uSub; vec2 w = vec2(cos(a), sin(a));
-      o = vec4(e + vec2(w.x * d.x - w.y * d.y, w.x * d.y + w.y * d.x), 0.0, 1.0);
+      int oi = c[uAxis];
+      int k = oi % uLs, i = (oi / uLs) % uR, q = oi / (uLs * uR);
+      int j = q * uLs + k, stride = N / uR;
+      // twiddles come from a table of N-th roots of unity built in double precision:
+      // w_L^(n·m) = w_N^((n·m mod L)·N/L), L = Ls·r, n = k + i·Ls
+      int L = uLs * uR, n = k + i * uLs, scale = N / L;
+      vec2 acc = vec2(0.0);
+      for (int m = 0; m < 8; m++) {
+        if (m >= uR) break;
+        ivec3 cc = c; cc[uAxis] = j + m * stride;
+        vec2 v = rd(cc);
+        vec2 wm = texelFetch(tTw, ivec2(((n * m) % L) * scale, 0), 0).xy;
+        wm.y *= -uSign;
+        acc += vec2(v.x * wm.x - v.y * wm.y, v.x * wm.y + v.y * wm.x);
+      }
+      o = vec4(acc, 0.0, 1.0);
     }`);
     P.kern = compile(`#version 300 es
     precision highp float; precision highp int; ${A}
@@ -272,12 +303,15 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       o = vec4(clamp(s.x + uDt * g, 0.0, 1.0), mix(s.y, g, 0.3), 0.0, 1.0); }`);
     P.light = compile(`#version 300 es
     precision highp float; precision highp int; ${A}
-    uniform sampler2D tState, tView; uniform vec3 uLight; uniform float uStep, uDecay, uTrailOn;
+    ${COARSE}
+    uniform sampler2D tState, tView, tOcc; uniform vec3 uLight; uniform float uStep, uDecay, uTrailOn;
     uniform int uNC; uniform vec4 uCen[8]; uniform vec3 uDir[8];
     out vec4 o;
     void main(){
       ivec3 c = cellOf(gl_FragCoord.xy);
       vec2 s = texelFetch(tState, ivec2(gl_FragCoord.xy), 0).xy;
+      // nothing within a block of here: no creature to shade and no smoke to update
+      if (s.x < 0.002 && texelFetch(tOcc, cTexOf(c / ${CF}), 0).x < 0.01) { o = vec4(s.x, s.y, 1.0, 0.0); return; }
       vec3 p = vec3(c) + 0.5; float acc = 0.0;
       for (int i = 1; i <= ${LSAMP}; i++) acc += sampleC(tView, p + uLight * (float(i) * uStep)).x;
       // smoke trail: last frame's trail, eroded and fading, topped up where the creature is
@@ -308,9 +342,27 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       for (int dz = 0; dz < ${CF}; dz++) for (int dy = 0; dy < ${CF}; dy++) for (int dx = 0; dx < ${CF}; dx++) s += texelFetch(tState, texOf(c + ivec3(dx, dy, dz)), 0).x;
       o = vec4(s, 0.0, 0.0, 1.0);
     }`);
+    P.occ = compile(`#version 300 es
+    precision highp float; precision highp int; ${A}${COARSE}
+    uniform sampler2D tView; out vec4 o;
+    void main(){
+      ivec3 c = cCellOf(gl_FragCoord.xy) * ${CF}; float mx = 0.0;
+      for (int dz = 0; dz < ${CF}; dz++) for (int dy = 0; dy < ${CF}; dy++) for (int dx = 0; dx < ${CF}; dx++) {
+        vec4 v = texelFetch(tView, texOf(c + ivec3(dx, dy, dz)), 0); mx = max(mx, max(v.x, v.w)); }
+      o = vec4(mx, 0.0, 0.0, 1.0);
+    }`);
+    P.dil = compile(`#version 300 es
+    precision highp float; precision highp int; ${A}${COARSE}
+    uniform sampler2D tOcc; out vec4 o;
+    void main(){
+      ivec3 c = cCellOf(gl_FragCoord.xy); float mx = 0.0;
+      for (int dz = -1; dz <= 1; dz++) for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) mx = max(mx, texelFetch(tOcc, cTexOf(c + ivec3(dx, dy, dz)), 0).x);
+      o = vec4(mx, 0.0, 0.0, 1.0);
+    }`);
     P.draw = compile(`#version 300 es
     precision highp float; precision highp int; ${A}
-    uniform sampler2D tView; uniform vec2 uRes; uniform vec3 uCam, uF, uR, uU, uOff; uniform float uTime, uCut, uSpan, uOpacity, uLightI;
+    ${COARSE}
+    uniform sampler2D tView, tOcc; uniform vec2 uRes; uniform vec3 uCam, uF, uR, uU, uOff; uniform float uTime, uCut, uSpan, uOpacity, uLightI;
     out vec4 o;
     float hash12(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
     void boxClip(vec3 p, vec3 nv, out vec2 tr, out float hit){
@@ -340,6 +392,15 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
         for (int i = 0; i < ${MAXS}; i++) {
           if (t > tr.y || T < 0.012) break;
           vec3 wp = uCam + rd * t;
+          // empty-space skipping: if this 64³ block (dilated by one) holds nothing, jump straight to its far side
+          vec3 cpos = uOff + wp * uSpan;
+          vec3 cb = floor(cpos / float(${CF}));
+          if (texelFetch(tOcc, cTexOf(ivec3(cb)), 0).x < 0.01) {
+            vec3 rdc = rd * uSpan, lo = cb * float(${CF}), hi = lo + float(${CF});
+            vec3 tt = (mix(lo, hi, step(0.0, rdc)) - cpos) / rdc;
+            t += max(min(min(tt.x, tt.y), tt.z), 0.0) + stepW * 0.5;
+            continue;
+          }
           if (wp.x <= uCut) {
             vec4 d = sampleC(tView, uOff + wp * uSpan);
             float dens = smoothstep(0.03, 0.85, d.x);
@@ -376,13 +437,14 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   }
 
   function uploadRG(target, data) { gl.bindTexture(gl.TEXTURE_2D, target.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, AW, AH, 0, gl.RG, gl.FLOAT, data); }
+  const radixPlan = n => { const rs = []; while (n > 1) { const r = n % 8 === 0 ? 8 : n % 4 === 0 ? 4 : 2; rs.push(r); n /= r; } return rs; };
   function* fft3G(src, sign, real) {
     let inp = src, first = true;
-    for (let axis = 0; axis < 3; axis++) for (let s = 1; s <= LOG; s++) {
+    for (let axis = 0; axis < 3; axis++) { let Ls = 1; for (const r of RADIX) {
       const out = inp === fa ? fb : fa;
-      pass(P.fft, out, u => { bindTex(0, inp.t, u.tIn); gl.uniform1i(u.uAxis, axis); gl.uniform1f(u.uSub, 1 << s); gl.uniform1f(u.uSign, sign); gl.uniform1i(u.uReal, first && real ? 1 : 0); });
-      inp = out; first = false; yield;
-    }
+      pass(P.fft, out, u => { bindTex(0, inp.t, u.tIn); bindTex(1, twTex, u.tTw); gl.uniform1i(u.uAxis, axis); gl.uniform1i(u.uLs, Ls); gl.uniform1i(u.uR, r); gl.uniform1f(u.uSign, sign); gl.uniform1i(u.uReal, first && real ? 1 : 0); });
+      inp = out; first = false; Ls *= r; yield;
+    } }
     if (inp !== fa) { const t = fa; fa = fb; fb = t; }
   }
   function fft3(src, sign, real) { const g = fft3G(src, sign, real); while (!g.next().done); }
@@ -404,7 +466,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     steps++; stepsSinceLight++; stepsThisSecond++;
   }
   let job = null, budget = 200, stepsThisSecond = 0, stepRate = 0;
-  const passesPerStep = () => 6 * LOG + 2;
+  const passesPerStep = () => 6 * RADIX.length + 2;
   const abortJob = () => { job = null; };
   function simStep() { abortJob(); const g = stepJob(); while (!g.next().done); }
   // run up to `budget` passes this frame, at most `maxSteps` whole steps
@@ -516,6 +578,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     steps = 0; follow = [0, 0, 0]; followTarget = [0, 0, 0]; tracked = []; lastMerged = []; lastCensusStep = 0; stepsSinceLight = 0;
     gl.clearColor(0, 0, 0, 0); for (const v of views) { gl.bindFramebuffer(gl.FRAMEBUFFER, v.f); gl.clear(gl.COLOR_BUFFER_BIT); }
     for (let k = 0; k < 2; k++) relight();
+    updateOcc(); relight();
   }
   rMu.addEventListener('input', () => { params.mu = parseFloat(rMu.value); $('vMu').textContent = params.mu.toFixed(4); });
   rSg.addEventListener('input', () => { params.sg = parseFloat(rSg.value); $('vSg').textContent = params.sg.toFixed(4); });
@@ -700,7 +763,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   const LIGHT = norm([0.45, 0.8, 0.35]);
   function relight() {
     const src = vi; vi ^= 1;
-    pass(P.light, views[vi], u => { bindTex(0, state.t, u.tState); bindTex(1, views[src].t, u.tView); gl.uniform3fv(u.uLight, LIGHT); gl.uniform1f(u.uStep, 2.0 * Z * 12 / LSAMP);
+    pass(P.light, views[vi], u => { bindTex(0, state.t, u.tState); bindTex(1, views[src].t, u.tView); bindTex(2, occB.t, u.tOcc); gl.uniform3fv(u.uLight, LIGHT); gl.uniform1f(u.uStep, 2.0 * Z * 12 / LSAMP);
       // fade and spread by simulated steps, not frames, so the trail length tracks how far the creature travelled
       const k = stepsSinceLight; stepsSinceLight = 0;
       // fade time chosen so the width halves every ~1 body radius of travel, whatever the creature's speed
@@ -711,6 +774,11 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       for (let q = 0; q < nc; q++) { const t = tracked[q]; C.set([...t.c, t.r0 || 6 * Z], q * 4);
         const sp = t.v ? Math.hypot(...t.v) : 0; if (sp > 0.002) Dd.set(t.v.map(v => v / sp), q * 3); }
       gl.uniform1i(u.uNC, nc); gl.uniform4fv(u.uCen, C); gl.uniform3fv(u.uDir, Dd); });
+    updateOcc();
+  }
+  function updateOcc() {
+    pass(P.occ, occA, u => bindTex(0, views[vi].t, u.tView));
+    pass(P.dil, occB, u => bindTex(0, occA.t, u.tOcc));
   }
 
   let last = performance.now(), t0 = last, frames = 0, acc = 0, ct = 0, slow = 0, lowFor = 0, highFor = 0, sinceScale = 0;
@@ -730,7 +798,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     if (params.follow) follow = follow.map((v, i) => v + (followTarget[i] - v) * (1 - Math.exp(-dt * 1.5)));
     const { c, f, r, up } = cam();
     pass(P.draw, null, u => {
-      bindTex(0, views[vi].t, u.tView);
+      bindTex(0, views[vi].t, u.tView); bindTex(1, occB.t, u.tOcc);
       gl.uniform2f(u.uRes, canvas.width, canvas.height); gl.uniform3fv(u.uCam, c); gl.uniform3fv(u.uF, f); gl.uniform3fv(u.uR, r); gl.uniform3fv(u.uU, up);
       gl.uniform3fv(u.uOff, winOff()); gl.uniform1f(u.uSpan, params.span); gl.uniform1f(u.uOpacity, params.opacity); gl.uniform1f(u.uLightI, params.light);
       gl.uniform1f(u.uTime, (now - t0) / 1000); gl.uniform1f(u.uCut, params.cut);
