@@ -53,10 +53,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--grow); outl
 .card { border-left: 2px solid var(--grow); padding: 2px 0 2px 10px; display: grid; gap: 4px; }
 .card .meta { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
 .card .what { color: var(--fg); line-height: 1.55; }
-.seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.seg3 button { display: grid; gap: 1px; padding: 7px 4px; }
-.seg3 small { font-size: 10px; color: var(--muted); font-family: var(--mono); }
-.seg3 button:disabled { opacity: 0.35; cursor: not-allowed; }
+.grp { display: grid; gap: 6px; }
+.cap { font-size: 10.5px; color: var(--muted); letter-spacing: 0.06em; }
+.seg4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.seg4 button { display: grid; gap: 1px; padding: 7px 2px; }
+.seg4 small { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+.seg4 button:disabled { opacity: 0.35; cursor: not-allowed; }
 .row { display: grid; grid-template-columns: 22px 1fr 58px; align-items: center; gap: 10px; }
 .row span { font-family: var(--mono); color: var(--fg); }
 .row output { font-family: var(--mono); text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -79,13 +81,18 @@ input[type=range] { width: 100%; min-width: 0; accent-color: var(--grow); margin
   <div class="legend"><span><i style="background:var(--grow)"></i>正在生长</span><span><i style="background:var(--decay)"></i>正在消亡</span></div>
   <div class="species" id="species" role="group" aria-label="物种"></div>
   <div class="card"><div class="meta" id="meta"></div><div class="what" id="what"></div></div>
-  <div class="seg3" role="group" aria-label="世界">
-    <button type="button" data-mode="wide" aria-pressed="true"><span>宽敞</span><small>128³ · 多只</small></button>
-    <button type="button" data-mode="fine" aria-pressed="false"><span>精细</span><small>128³ · 放大</small></button>
-    <button type="button" data-mode="lite" aria-pressed="false"><span>流畅</span><small>64³</small></button>
-    <button type="button" data-mode="x256" aria-pressed="false"><span>256³</span><small>放大 2× · ~1GB</small></button>
-    <button type="button" data-mode="x512" aria-pressed="false"><span>512³</span><small>放大 4× · ~8GB</small></button>
-  </div>
+  <div class="grp"><span class="cap">数量</span>
+    <div class="seg2" role="group" aria-label="数量">
+      <button type="button" data-count="multi" aria-pressed="true"><span>多只</span></button>
+      <button type="button" data-count="single" aria-pressed="false"><span>单只</span></button>
+    </div></div>
+  <div class="grp"><span class="cap">分辨率</span>
+    <div class="seg4" role="group" aria-label="分辨率">
+      <button type="button" data-res="64" aria-pressed="false"><span>64³</span><small>流畅</small></button>
+      <button type="button" data-res="128" aria-pressed="true"><span>128³</span><small>默认</small></button>
+      <button type="button" data-res="256" aria-pressed="false"><span>256³</span><small>~1GB</small></button>
+      <button type="button" data-res="512" aria-pressed="false"><span>512³</span><small>~7GB</small></button>
+    </div></div>
   <label class="row" for="rOp"><span>◐</span><input id="rOp" type="range" min="1" max="30" step="0.5" value="4.5"><output id="vOp">4.5</output></label>
   <label class="row" for="rLight"><span>☀</span><input id="rLight" type="range" min="0" max="3" step="0.05" value="1"><output id="vLight">1.00</output></label>
   <label class="row" for="rSpd"><span>⏵</span><input id="rSpd" type="range" min="0" max="8" step="1" value="2"><output id="vSpd">2 步/帧</output></label>
@@ -104,11 +111,11 @@ input[type=range] { width: 100%; min-width: 0; accent-color: var(--grow); margin
   <div class="readout">
     <div><label>个体</label><output id="oBlobs">–</output></div>
     <div><label>质量</label><output id="oMass">–</output></div>
-    <div><label>步数</label><output id="oStep">0</output></div>
+    <div><label>步数 · 步/秒</label><output id="oStep">0</output></div>
     <div><label>帧率</label><output id="oFps">–</output></div>
   </div>
   <p id="hint" hidden></p>
-  <p class="hide-sm">☀ 是光照强度，◐ 是不透明度（越往左越通透）。“宽敞”模式里生物保持原尺寸，空间是“精细”模式的 8 倍，会一次放进好几只、朝向随机。世界是首尾相连的：生物从一面出去会从对面进来，“跟随”会把一只生物一直保持在画面中央。拖动旋转，滚轮缩放，点击空白处再放一只。</p>
+  <p class="hide-sm">☀ 是光照强度，◐ 是不透明度（越往左越通透）。“多只”会一次放进好几只、朝向随机；“单只”只放一只并拉近镜头。分辨率越高越精细也越吃显卡，模拟会按显卡能承受的速度自动放慢，画面保持流畅。世界是首尾相连的：生物从一面出去会从对面进来，“跟随”会把一只生物一直保持在画面中央。拖动旋转，滚轮缩放，点击空白处再放一只。</p>
   <p class="credit">物种数据来自 Bert Chan 的 Lenia 项目（<a href="https://github.com/Chakazul/Lenia" style="color:var(--muted)">github.com/Chakazul/Lenia</a>）。</p>
 </section>
 
@@ -211,12 +218,14 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   const MAXTEX = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   // slices per atlas row: the most square layout that fits the texture limit
   function atlasTX(n) { let best = 0, bd = 1e9; for (let tx = 1; tx <= n; tx *= 2) { const w = n * tx, h = n * (n / tx); if (w <= MAXTEX && h <= MAXTEX && Math.abs(Math.log2(w / h)) < bd) { bd = Math.abs(Math.log2(w / h)); best = tx; } } return best; }
-  let STEPC = 1, MAXS = 300;
+  let STEPC = 1, MAXS = 300, LSAMP = 12;
   function setRes(n, z) {
+    abortJob();
     [state, stateB, fa, fb, kHat, coarse, ...(views || [])].forEach(t => t && t.free());
     N = n; TX = atlasTX(n); if (!TX) throw new Error('texture-limit');
     AW = N * TX; AH = N * (N / TX); LOG = Math.log2(N); NNN = N * N * N; Z = z; CF = N / 64;
-    STEPC = N >= 512 ? 2.0 : N >= 256 ? 1.5 : 1.0; MAXS = Math.ceil(3.6 * (N / 2) / STEPC) + 20;
+    STEPC = N >= 512 ? 2.5 : N >= 256 ? 1.5 : 1.0; MAXS = Math.ceil(3.6 * (N / 2) / STEPC) + 20;
+    LSAMP = N >= 512 ? 6 : N >= 256 ? 8 : 12;
     const RG = () => tex(AW, AH, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST);
     state = RG(); stateB = RG(); fa = RG(); fb = RG(); kHat = RG();
     views = [tex(AW, AH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR), tex(AW, AH, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR)]; vi = 0;
@@ -270,7 +279,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       ivec3 c = cellOf(gl_FragCoord.xy);
       vec2 s = texelFetch(tState, ivec2(gl_FragCoord.xy), 0).xy;
       vec3 p = vec3(c) + 0.5; float acc = 0.0;
-      for (int i = 1; i <= 12; i++) acc += sampleC(tView, p + uLight * (float(i) * uStep)).x;
+      for (int i = 1; i <= ${LSAMP}; i++) acc += sampleC(tView, p + uLight * (float(i) * uStep)).x;
       // smoke trail: last frame's trail, eroded and fading, topped up where the creature is
       if (uTrailOn < 0.5) { o = vec4(s.x, s.y, exp(-acc * uStep * 0.5 / float(${Z})), 0.0); return; }
       float trail = texelFetch(tView, texOf(c), 0).w * uDecay;
@@ -367,30 +376,46 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   }
 
   function uploadRG(target, data) { gl.bindTexture(gl.TEXTURE_2D, target.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, AW, AH, 0, gl.RG, gl.FLOAT, data); }
-  function fft3(src, sign, real) {
+  function* fft3G(src, sign, real) {
     let inp = src, first = true;
     for (let axis = 0; axis < 3; axis++) for (let s = 1; s <= LOG; s++) {
       const out = inp === fa ? fb : fa;
       pass(P.fft, out, u => { bindTex(0, inp.t, u.tIn); gl.uniform1i(u.uAxis, axis); gl.uniform1f(u.uSub, 1 << s); gl.uniform1f(u.uSign, sign); gl.uniform1i(u.uReal, first && real ? 1 : 0); });
-      inp = out; first = false;
+      inp = out; first = false; yield;
     }
     if (inp !== fa) { const t = fa; fa = fb; fb = t; }
   }
+  function fft3(src, sign, real) { const g = fft3G(src, sign, real); while (!g.next().done); }
 
-  const params = { mu: 0.15, sg: 0.015, T: 10, spd: 2, paused: false, cut: 1, follow: true, span: 32, opacity: 4.5, light: 1, mode: 'wide', trail: true, vec: false };
+  const params = { mu: 0.15, sg: 0.015, T: 10, spd: 2, paused: false, cut: 1, follow: true, span: 32, opacity: 4.5, light: 1, mode: 'multi', multi: true, trail: true, vec: false };
   let stepsThisFrame = 0, stepsSinceLight = 0, frameNo = 0;
   let steps = 0, sp = null;
-  function simStep() {
-    fft3(state, -1, true);
+  // the state texture is only swapped on the very last pass, so a half-finished step never shows up on screen
+  function* stepJob() {
+    yield* fft3G(state, -1, true);
     pass(P.mul, fb, u => { bindTex(0, fa.t, u.tA); bindTex(1, kHat.t, u.tK); gl.uniform1i(u.uCopy, 0); });
-    { const t = fa; fa = fb; fb = t; }
-    fft3(fa, +1, false);
+    { const t = fa; fa = fb; fb = t; } yield;
+    yield* fft3G(fa, +1, false);
     pass(P.upd, stateB, u => {
       bindTex(0, state.t, u.tState); bindTex(1, fa.t, u.tU);
       gl.uniform1f(u.uMu, params.mu); gl.uniform1f(u.uSg, params.sg); gl.uniform1f(u.uDt, 1 / params.T); gl.uniform1f(u.uScale, 1 / NNN);
     });
     { const t = state; state = stateB; stateB = t; }
-    steps++;
+    steps++; stepsSinceLight++; stepsThisSecond++;
+  }
+  let job = null, budget = 200, stepsThisSecond = 0, stepRate = 0;
+  const passesPerStep = () => 6 * LOG + 2;
+  const abortJob = () => { job = null; };
+  function simStep() { abortJob(); const g = stepJob(); while (!g.next().done); }
+  // run up to `budget` passes this frame, at most `maxSteps` whole steps
+  function runSim(maxSteps) {
+    let done = 0, n = 0;
+    while (n < budget && done < maxSteps) {
+      if (!job) job = stepJob();
+      const r = job.next(); n++;
+      if (r.done) { job = null; done++; }
+    }
+    return n;
   }
   function buildKernel(R, b) {
     const bs = String(b).split(',').map(v => { const [p, q] = v.split('/'); return q ? +p / +q : +p; });
@@ -414,6 +439,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   function clearState() { gl.bindFramebuffer(gl.FRAMEBUFFER, state.f); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); }
   const segs = (start, len) => { const a = ((start % N) + N) % N; return a + len <= N ? [[a, 0, len]] : [[a, 0, N - a], [0, N - a, len - (N - a)]]; };
   function place(c, at, keep) {
+    abortJob();
     if (!keep) clearState();
     const [dz, dy, dx] = c.D;
     const X0 = Math.round(at[0] - dx / 2), Y0 = Math.round(at[1] - dy / 2), Z0 = Math.round(at[2] - dz / 2);
@@ -469,7 +495,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     const p = sp.params; params.mu = p.m; params.sg = p.s; params.T = p.T;
     const size = Math.max(...cells.D);
     params.spanNear = Math.max(13 * Z, Math.min(N / 2, size * 1.25));
-    params.span = MULTI.has(params.mode) ? N / 2 : params.follow ? params.spanNear : N / 2;
+    params.span = params.multi ? N / 2 : params.follow ? params.spanNear : N / 2;
     rMu.min = (p.m * 0.8).toFixed(4); rMu.max = (p.m * 1.2).toFixed(4); rMu.value = p.m;
     rSg.min = (p.s * 0.6).toFixed(4); rSg.max = (p.s * 1.6).toFixed(4); rSg.value = p.s;
     $('vMu').textContent = p.m.toFixed(4); $('vSg').textContent = p.s.toFixed(4);
@@ -479,7 +505,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     buildKernel(p.R * Z, p.b);
     sp.cur = cells;
     // how many fit: keep copies about 3 kernel radii apart; huge species (the membrane) get one
-    const minD = 3.0 * p.R * Z, count = MULTI.has(params.mode) && size < N / 3 ? Math.min(N >= 256 ? 8 : 6, Math.floor(N * N * N / Math.pow(minD * 1.25, 3))) : 1;
+    const minD = 3.0 * p.R * Z, count = params.multi && size < N / 3 ? Math.min(N >= 256 ? 8 : 6, Math.floor(N * N * N / Math.pow(minD * 1.25, 3))) : 1;
     const spots = [[N / 2, N / 2, N / 2]];
     for (let tries = 0; spots.length < count && tries < 4000; tries++) {
       const q = [Math.random() * N, Math.random() * N, Math.random() * N];
@@ -501,31 +527,32 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   const bFollow = $('bFollow'), bPause = $('bPause'), bTrail = $('bTrail'), bVec = $('bVec');
   bTrail.addEventListener('click', () => { params.trail = !params.trail; bTrail.setAttribute('aria-pressed', String(params.trail)); });
   bVec.addEventListener('click', () => { params.vec = !params.vec; bVec.setAttribute('aria-pressed', String(params.vec)); });
-  bFollow.addEventListener('click', () => { params.follow = !params.follow; bFollow.setAttribute('aria-pressed', String(params.follow)); params.span = params.follow && !MULTI.has(params.mode) ? params.spanNear : N / 2; });
+  bFollow.addEventListener('click', () => { params.follow = !params.follow; bFollow.setAttribute('aria-pressed', String(params.follow)); params.span = params.follow && !params.multi ? params.spanNear : N / 2; });
   bPause.addEventListener('click', () => { params.paused = !params.paused; bPause.setAttribute('aria-pressed', String(params.paused)); bPause.querySelector('span').textContent = params.paused ? '继续' : '暂停'; });
-  const MODES = { wide: [128, 1], fine: [128, 2], lite: [64, 1], x256: [256, 2], x512: [512, 4] };
-  const MULTI = new Set(['wide', 'x256', 'x512']);
-  // grey out sizes this GPU's texture limit cannot hold
-  document.querySelectorAll('[data-mode]').forEach(b => { if (!atlasTX(MODES[b.dataset.mode][0])) { b.disabled = true; b.title = `这块显卡的纹理上限是 ${MAXTEX}，放不下这个尺寸`; } });
-  function setMode(m, first) {
-    if (!first && m === params.mode) return;
-    const [n, z] = MODES[m];
+  // creature zoom: a single creature gets the detail (up to 4×); many creatures get the room (world = 128 native cells)
+  const zoomFor = (multi, n) => multi ? Math.max(1, n / 128) : Math.min(4, n / 64);
+  document.querySelectorAll('[data-res]').forEach(b => { if (!atlasTX(+b.dataset.res)) { b.disabled = true; b.title = `这块显卡的纹理上限是 ${MAXTEX}，放不下这个尺寸`; } });
+  function setWorld(multi, n, first) {
+    if (!first && multi === params.multi && n === N) return;
     const i = sp ? SPECIES.indexOf(sp) : 0; let fellBack = false;
-    try { setRes(n, z); }
+    try { setRes(n, zoomFor(multi, n)); }
     catch (err) {
-      // not enough video memory or too large a texture: fall back to the comfortable default
       $('hint').textContent = `${n}³ 没能分配显存（${err.message === 'texture-limit' ? '超出纹理尺寸上限' : '显存不足'}），已退回 128³。`; $('hint').hidden = false;
-      if (m !== 'wide') { params.mode = 'wide'; setRes(128, 1); } else throw err;
-      m = 'wide'; fellBack = true;
+      if (n !== 128) { n = 128; setRes(128, zoomFor(multi, 128)); } else throw err;
+      fellBack = true;
     }
-    params.mode = m;
-    params.follow = true; bFollow.setAttribute('aria-pressed', String(params.follow));
-    document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    params.multi = multi; params.mode = multi ? 'multi' : 'single';
+    params.follow = true; bFollow.setAttribute('aria-pressed', 'true');
+    document.querySelectorAll('[data-count]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.count === 'multi') === multi)));
+    document.querySelectorAll('[data-res]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.res === N)));
+    budget = N >= 512 ? 4 : N >= 256 ? 20 : 200;
     choose(i); for (let k = 0; k < 4; k++) relight();
     params.spd = { 64: 4, 128: 2, 256: 2, 512: 1 }[N]; $('rSpd').value = params.spd; $('vSpd').textContent = `${params.spd} 步/帧`;
     slow = 0; if (!fellBack) $('hint').hidden = true;
   }
-  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  const setMode = m => ({ wide: () => setWorld(true, 128), fine: () => setWorld(false, 128), lite: () => setWorld(false, 64), x256: () => setWorld(true, 256), x512: () => setWorld(true, 512) })[m]();
+  document.querySelectorAll('[data-count]').forEach(b => b.addEventListener('click', () => setWorld(b.dataset.count === 'multi', N)));
+  document.querySelectorAll('[data-res]').forEach(b => b.addEventListener('click', () => setWorld(params.multi, +b.dataset.res)));
 
   // ---------- camera: orbit + a periodic window that can follow the creature ----------
   const norm = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
@@ -562,9 +589,31 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
 
   // ---------- census on the 64³ block-sum grid (cheap read-back) ----------
   const rb = new Float32Array(MW * MH * 4), occ = new Uint8Array(M * M * M), seen = new Uint8Array(M * M * M);
+  const pbo = gl.createBuffer(); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo); gl.bufferData(gl.PIXEL_PACK_BUFFER, rb.byteLength, gl.STREAM_READ); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+  let fence = null, fenceStep = 0;
+  function censusRequest() {
+    if (fence) return;
+    pass(P.down, coarse, u => bindTex(0, state.t, u.tState));
+    gl.bindFramebuffer(gl.FRAMEBUFFER, coarse.f); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+    gl.readPixels(0, 0, MW, MH, gl.RGBA, gl.FLOAT, 0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); fenceStep = steps; gl.flush();
+  }
+  function censusPoll() {
+    if (!fence) return;
+    const st = gl.clientWaitSync(fence, 0, 0);
+    if (st === gl.TIMEOUT_EXPIRED) return;
+    gl.deleteSync(fence); fence = null;
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, rb); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    censusProcess(fenceStep);
+  }
+  // synchronous version, used right after placing creatures and by tests
   function census() {
+    if (fence) { gl.deleteSync(fence); fence = null; }
     pass(P.down, coarse, u => bindTex(0, state.t, u.tState));
     gl.bindFramebuffer(gl.FRAMEBUFFER, coarse.f); gl.readPixels(0, 0, MW, MH, gl.RGBA, gl.FLOAT, rb);
+    return censusProcess(steps);
+  }
+  function censusProcess(atStep) {
     const thr = 0.1 * CF * CF * CF; let m = 0; const S = [0, 0, 0, 0, 0, 0], tw = 2 * Math.PI / M;
     for (let z = 0; z < M; z++) for (let y = 0; y < M; y++) for (let x = 0; x < M; x++) {
       const v = rb[((((z / MT) | 0) * M + y) * MW + (z % MT) * M + x) * 4]; const i = (z * M + y) * M + x; occ[i] = v > thr ? 1 : 0;
@@ -587,7 +636,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       else merged.push({ c: f.c.slice(), m: f.m, n: f.n });
     }
     blobs = merged.length; lastMerged = merged;
-    track(merged);
+    track(merged, atStep);
     $('oMass').textContent = m < 1 ? '0' : m >= 10000 ? (m / 1000).toFixed(1) + 'k' : m.toFixed(0);
     $('oBlobs').textContent = m < 1 ? '灭绝' : blobs > 0 ? String(blobs) : '–';
     if (m > 1 && lastMerged.length) {
@@ -603,8 +652,8 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   // match creatures between censuses by nearest centroid (periodic), giving a velocity in cells per step
   let tracked = [], lastCensusStep = 0, lastMerged = [];
   const pd = (a, b) => a.map((v, k) => { let d = v - b[k]; d -= N * Math.round(d / N); return d; });
-  function track(found) {
-    const ds = steps - lastCensusStep; lastCensusStep = steps;
+  function track(found, atStep = steps) {
+    const ds = atStep - lastCensusStep; lastCensusStep = atStep;
     const next = found.map(f => {
       const r0 = Math.cbrt(3 * f.n * CF * CF * CF / (4 * Math.PI));
       let best = null, bd = 1e9;
@@ -651,7 +700,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
   const LIGHT = norm([0.45, 0.8, 0.35]);
   function relight() {
     const src = vi; vi ^= 1;
-    pass(P.light, views[vi], u => { bindTex(0, state.t, u.tState); bindTex(1, views[src].t, u.tView); gl.uniform3fv(u.uLight, LIGHT); gl.uniform1f(u.uStep, 2.0 * Z);
+    pass(P.light, views[vi], u => { bindTex(0, state.t, u.tState); bindTex(1, views[src].t, u.tView); gl.uniform3fv(u.uLight, LIGHT); gl.uniform1f(u.uStep, 2.0 * Z * 12 / LSAMP);
       // fade and spread by simulated steps, not frames, so the trail length tracks how far the creature travelled
       const k = stepsSinceLight; stepsSinceLight = 0;
       // fade time chosen so the width halves every ~1 body radius of travel, whatever the creature's speed
@@ -664,15 +713,19 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       gl.uniform1i(u.uNC, nc); gl.uniform4fv(u.uCen, C); gl.uniform3fv(u.uDir, Dd); });
   }
 
-  let last = performance.now(), t0 = last, frames = 0, acc = 0, ct = 0, slow = 0;
-  setMode('wide', true);
+  let last = performance.now(), t0 = last, frames = 0, acc = 0, ct = 0, slow = 0, lowFor = 0, highFor = 0, sinceScale = 0;
+  setWorld(true, 128, true);
   function frame(now) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    stepsThisFrame = 0;
-    if (!params.paused) for (let i = 0; i < params.spd; i++) { simStep(); stepsThisFrame++; }
-    stepsSinceLight += stepsThisFrame;
-    // lighting and the trail change slowly: refresh them every other frame
-    if ((frameNo++ & 1) === 0) relight();
+    // keep each frame's GPU work bounded (a long frame can trip the driver watchdog and flash the whole screen):
+    // grow the pass budget while frames are quick, shrink it as soon as one runs long
+    if (dt > 0.034) budget = Math.max(1, Math.floor(budget * 0.75));
+    else if (dt < 0.02) budget = Math.min(passesPerStep() * Math.max(1, params.spd), budget + Math.max(1, Math.ceil(budget * 0.1)));
+    if (!params.paused && params.spd > 0) runSim(params.spd);
+    // lighting and the trail change slowly; refresh them only after the world has moved, less often in big worlds
+    const every = N >= 512 ? 8 : N >= 256 ? 4 : 2;
+    if ((frameNo++ % every) === 0 && (stepsSinceLight > 0 || frameNo < 10)) relight();
+    censusPoll();
     if (autoSpin) yaw += dt * 0.1;
     if (params.follow) follow = follow.map((v, i) => v + (followTarget[i] - v) * (1 - Math.exp(-dt * 1.5)));
     const { c, f, r, up } = cam();
@@ -683,19 +736,23 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
       gl.uniform1f(u.uTime, (now - t0) / 1000); gl.uniform1f(u.uCut, params.cut);
     });
     drawVectors({ c, f, r, up });
-    $('oStep').textContent = steps;
+    $('oStep').textContent = `${steps} · ${stepRate.toFixed(stepRate < 10 ? 1 : 0)}`;
     frames++; acc += dt; ct += dt;
-    if (ct > 0.5) { ct = 0; census(); }
+    if (ct > (N >= 512 ? 2 : N >= 256 ? 1 : 0.5)) { ct = 0; censusRequest(); }
     if (acc > 1) {
-      const fps = frames / acc; $('oFps').textContent = fps.toFixed(0); frames = 0; acc = 0;
-      const ns = fps < 28 ? Math.max(0.35, scale - 0.07) : fps > 56 ? Math.min(0.85, scale + 0.04) : scale;
-      if (Math.abs(ns - scale) > 0.01) { scale = ns; resize(); }
+      const fps = frames / acc; $('oFps').textContent = fps.toFixed(0); stepRate = stepsThisSecond / acc; stepsThisSecond = 0; frames = 0; acc = 0;
+      // change the canvas size rarely: only after the frame rate has been off for a few seconds in a row
+      lowFor = fps < 26 ? lowFor + 1 : 0; highFor = fps > 57 ? highFor + 1 : 0; sinceScale++;
+      if (sinceScale >= 3 && (lowFor >= 2 || highFor >= 4)) {
+        const ns = lowFor >= 2 ? Math.max(0.35, scale - 0.1) : Math.min(0.85, scale + 0.05);
+        if (Math.abs(ns - scale) > 0.01) { scale = ns; resize(); sinceScale = 0; lowFor = highFor = 0; }
+      }
       slow = N >= 128 && fps < 18 ? slow + 1 : 0;
       if (slow >= 3) { $('hint').textContent = `这台电脑跑 ${N}³ 有些吃力，可以换小一档的世界或把 ⏵ 调低。`; $('hint').hidden = false; }
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__lenia = { simStep, choose, census, relight, params, setMode, get steps() { return steps; } };
+  window.__lenia = { simStep, choose, census, relight, params, setMode, setWorld, runSim, get budget() { return budget; }, get steps() { return steps; } };
 })();
 </script>
