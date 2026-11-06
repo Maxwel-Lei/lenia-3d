@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>Lenia MG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=block" rel="stylesheet">
+<style>html,body{margin:0;background:#000;height:100%}canvas{width:100vw;height:100vh;object-fit:contain;display:block}
+#p{position:fixed;right:10px;top:10px;font:13px system-ui;color:#eee;background:#000c;padding:8px;border-radius:6px}</style>
+<canvas id="c" width="1920" height="1080"></canvas><div id="p">MG</div>
+<script>const ORB = {"h": 20, "w": 20, "d": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.051, 0.016, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.235, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.137, 0.208, 0.212, 0.082, 0.071, 0.098, 0.102, 0.071, 0.004, 0.255, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.086, 0.267, 0.357, 0.384, 0.341, 0.188, 0.184, 0.173, 0.184, 0.176, 0.106, 0.349, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.012, 0.067, 0.349, 0.455, 0.467, 0.38, 0.129, 0.078, 0.055, 0.063, 0.122, 0.216, 0.706, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.035, 0.129, 0.184, 0.341, 0.404, 0.384, 0.282, 0.133, 0.0, 0.0, 0.0, 0.0, 0.047, 0.4, 0.329, 0.0, 0.0, 0.004, 0.0, 0.016, 0.137, 0.169, 0.133, 0.11, 0.247, 0.271, 0.263, 0.208, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.863, 0.0, 0.0, 0.235, 0.0, 0.102, 0.173, 0.078, 0.0, 0.0, 0.2, 0.31, 0.369, 0.373, 0.239, 0.0, 0.0, 0.0, 0.0, 0.0, 0.455, 0.157, 0.0, 0.0, 0.122, 0.184, 0.11, 0.0, 0.0, 0.0, 0.271, 0.427, 0.506, 0.537, 0.51, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.518, 0.0, 0.0, 0.588, 0.216, 0.031, 0.0, 0.0, 0.0, 0.188, 0.529, 0.635, 0.682, 0.682, 0.42, 0.0, 0.0, 0.0, 0.0, 0.0, 0.427, 0.0, 0.0, 0.553, 0.235, 0.0, 0.0, 0.0, 0.0, 0.027, 0.62, 0.757, 0.839, 0.855, 0.808, 0.106, 0.0, 0.0, 0.0, 0.0, 0.282, 0.098, 0.0, 0.0, 0.596, 0.0, 0.0, 0.0, 0.0, 0.0, 0.667, 0.875, 0.961, 0.992, 0.973, 0.561, 0.0, 0.0, 0.0, 0.0, 0.224, 0.141, 0.0, 0.0, 0.839, 0.0, 0.0, 0.0, 0.0, 0.0, 0.506, 0.969, 1.0, 1.0, 1.0, 0.914, 0.278, 0.0, 0.0, 0.024, 0.22, 0.133, 0.0, 0.0, 0.553, 0.075, 0.0, 0.0, 0.0, 0.0, 0.333, 1.0, 1.0, 0.98, 1.0, 0.973, 0.557, 0.157, 0.051, 0.118, 0.243, 0.086, 0.0, 0.0, 0.031, 0.447, 0.0, 0.0, 0.0, 0.0, 0.176, 0.851, 1.0, 0.894, 0.863, 0.867, 0.651, 0.333, 0.196, 0.216, 0.231, 0.039, 0.0, 0.0, 0.0, 0.424, 0.114, 0.0, 0.0, 0.0, 0.114, 0.62, 0.878, 0.824, 0.78, 0.741, 0.612, 0.408, 0.294, 0.267, 0.165, 0.0, 0.0, 0.0, 0.0, 0.078, 0.333, 0.075, 0.0, 0.0, 0.118, 0.424, 0.675, 0.722, 0.678, 0.627, 0.525, 0.404, 0.31, 0.224, 0.063, 0.0, 0.0, 0.0, 0.0, 0.0, 0.165, 0.259, 0.149, 0.118, 0.173, 0.337, 0.498, 0.557, 0.545, 0.498, 0.427, 0.337, 0.243, 0.118, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.145, 0.231, 0.235, 0.259, 0.318, 0.388, 0.424, 0.412, 0.361, 0.306, 0.227, 0.125, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.071, 0.169, 0.227, 0.251, 0.275, 0.278, 0.259, 0.231, 0.165, 0.094, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.059, 0.102, 0.129, 0.133, 0.118, 0.078, 0.043, 0.0, 0.0, 0.0, 0.0, 0.0], "R": 13, "m": 0.15, "s": 0.015, "T": 10};</script>
+<script>// ===== Lenia explainer: motion-graphics scenes drawn on a canvas, timeline-driven (draw(t) is pure) =====
+const W = 1920, H = 1080, FPS = 30;
+const C = { bg: '#0b0c0f', fg: '#efe8dc', dim: '#8e8a83', faint: '#2a2b30', amber: '#f0a45c', red: '#ef7a5a', teal: '#5fb4d8', cream: '#fff2d8' };
+const F = { serif: '"Noto Serif SC", serif', sans: '"Noto Sans SC", sans-serif', math: '"Noto Serif", "Times New Roman", serif' };
+
+// ---------- easing / timing ----------
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const eio = t => (t = clamp(t), t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const eout = t => (t = clamp(t), 1 - Math.pow(1 - t, 3));
+const eback = t => { t = clamp(t); const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+const eexpo = t => (t = clamp(t), t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+const seg = (t, a, d) => clamp((t - a) / d);
+const win = (t, a, b, fi = 0.4, fo = 0.4) => Math.min(eout(seg(t, a, fi)), 1 - eio(seg(t, b - fo, fo)));
+
+// ---------- 2D Lenia (FFT on the CPU, precomputed) ----------
+function fft1(re, im, inv) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+  for (let len = 2; len <= n; len <<= 1) {
+    const a = (inv ? 2 : -2) * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a);
+    for (let i = 0; i < n; i += len) { let cr = 1, ci = 0;
+      for (let j = 0; j < len / 2; j++) { const ur = re[i + j], ui = im[i + j], k = i + j + len / 2; const vr = re[k] * cr - im[k] * ci, vi = re[k] * ci + im[k] * cr;
+        re[i + j] = ur + vr; im[i + j] = ui + vi; re[k] = ur - vr; im[k] = ui - vi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } }
+  }
+}
+function fft2(re, im, n, inv) {
+  const r = new Float64Array(n), i2 = new Float64Array(n);
+  for (let y = 0; y < n; y++) { for (let x = 0; x < n; x++) { r[x] = re[y * n + x]; i2[x] = im[y * n + x]; } fft1(r, i2, inv); for (let x = 0; x < n; x++) { re[y * n + x] = r[x]; im[y * n + x] = i2[x]; } }
+  for (let x = 0; x < n; x++) { for (let y = 0; y < n; y++) { r[y] = re[y * n + x]; i2[y] = im[y * n + x]; } fft1(r, i2, inv); for (let y = 0; y < n; y++) { re[y * n + x] = r[y]; im[y * n + x] = i2[y]; } }
+}
+function lenia2d(mu, sg, steps, n = 128) {
+  const O = ORB, R = O.R, T = O.T;
+  let A = new Float64Array(n * n);
+  const oy = (n - O.h) >> 1, ox = (n - O.w) >> 1;
+  for (let y = 0; y < O.h; y++) for (let x = 0; x < O.w; x++) A[(oy + y) * n + ox + x] = O.d[y * O.w + x];
+  const kr = new Float64Array(n * n), ki = new Float64Array(n * n); let s = 0;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const dy = y < n / 2 ? y : y - n, dx = x < n / 2 ? x : x - n; const D = Math.hypot(dx, dy) / R;
+    const v = D > 0 && D < 1 ? Math.exp(4 - 1 / (D * (1 - D))) : 0; kr[y * n + x] = v; s += v; }
+  for (let i = 0; i < n * n; i++) kr[i] /= s;
+  fft2(kr, ki, n, false);
+  const out = { A: [], U: [], G: [], n };
+  const re = new Float64Array(n * n), im = new Float64Array(n * n);
+  for (let t = 0; t < steps; t++) {
+    re.set(A); im.fill(0); fft2(re, im, n, false);
+    for (let i = 0; i < n * n; i++) { const a = re[i] * kr[i] - im[i] * ki[i], b = re[i] * ki[i] + im[i] * kr[i]; re[i] = a; im[i] = b; }
+    fft2(re, im, n, true);
+    const U = new Float32Array(n * n), G = new Float32Array(n * n), An = new Float64Array(n * n);
+    for (let i = 0; i < n * n; i++) { const u = re[i] / (n * n); U[i] = u; const g = 2 * Math.exp(-((u - mu) ** 2) / (2 * sg * sg)) - 1; G[i] = g; An[i] = clamp(A[i] + g / T); }
+    out.A.push(Float32Array.from(A)); out.U.push(U); out.G.push(G);
+    A = An;
+  }
+  return out;
+}
+function com(a, n) { let sx = 0, cx = 0, sy = 0, cy = 0, m = 0; const k = 2 * Math.PI / n;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = a[y * n + x]; if (!v) continue; m += v; sx += v * Math.sin(x * k); cx += v * Math.cos(x * k); sy += v * Math.sin(y * k); cy += v * Math.cos(y * k); }
+  return m < 1e-6 ? [n / 2, n / 2] : [((Math.atan2(sy, cy) / k) + n) % n, ((Math.atan2(sx, cx) / k) + n) % n]; }
+
+// colour maps
+const CM = [[11, 12, 15], [62, 20, 22], [152, 54, 32], [224, 130, 62], [247, 198, 122], [255, 242, 216]];
+function cmapA(v) { v = clamp(v) * (CM.length - 1); const i = Math.min(CM.length - 2, v | 0), f = v - i; return [0, 1, 2].map(k => CM[i][k] + (CM[i + 1][k] - CM[i][k]) * f); }
+function cmapG(g) { g = clamp(g, -1, 1); const bg = [11, 12, 15], p = [240, 128, 72], q = [95, 180, 216]; return g > 0 ? bg.map((b, k) => b + (p[k] - b) * g) : bg.map((b, k) => b + (q[k] - b) * -g); }
+const tiles = new Map();
+function fieldCanvas(key, arr, n, cy, cx, half, kind = 'A', gain = 1) {
+  // periodic crop of 2*half around (cy,cx) rendered into a small canvas (cached per key)
+  if (tiles.has(key)) return tiles.get(key);
+  const s = 2 * half, cv = new OffscreenCanvas(s, s), x = cv.getContext('2d'), im = x.createImageData(s, s);
+  for (let y = 0; y < s; y++) for (let xx = 0; xx < s; xx++) {
+    const yy = ((Math.floor(cy) - half + y) % n + n) % n, xs = ((Math.floor(cx) - half + xx) % n + n) % n; const v = arr[yy * n + xs] * gain;
+    const c = kind === 'A' ? cmapA(v) : cmapG(v); const o = (y * s + xx) * 4; im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255;
+  }
+  x.putImageData(im, 0, 0);
+  const up = new OffscreenCanvas(s * 8, s * 8), ux = up.getContext('2d'); ux.imageSmoothingEnabled = true; ux.imageSmoothingQuality = 'high'; ux.filter = 'blur(6px)'; ux.drawImage(cv, 0, 0, s * 8, s * 8);
+  if (tiles.size > 600) tiles.clear();
+  tiles.set(key, up); return up;
+  tiles.set(key, cv); return cv;
+}
+
+// ---------- drawing helpers ----------
+let ctx;
+const USED = new Set();
+function txt(s, x, y, o = {}) {
+  const a = o.a == null ? 1 : o.a; if (a <= 0.003) return; USED.add((o.font || 'sans') + '|' + s);
+  ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = o.color || C.fg;
+  ctx.font = `${o.italic ? 'italic ' : ''}${o.weight || 400} ${o.size || 36}px ${F[o.font || 'sans']}`;
+  ctx.textAlign = o.align || 'left'; ctx.textBaseline = o.base || 'alphabetic';
+  if (o.ls) ctx.letterSpacing = o.ls + 'px';
+  if (o.rise != null) { // per-character rise-in
+    const chars = [...s]; let cx = x; const total = ctx.measureText(s).width; if (o.align === 'center') cx = x - total / 2; ctx.textAlign = 'left';
+    chars.forEach((ch, i) => { const p = eback(seg(o.rise, i * (o.stagger || 0.03), 0.5)); ctx.globalAlpha = a * clamp(p); ctx.fillText(ch, cx, y + (1 - p) * 40); cx += ctx.measureText(ch).width; });
+  } else ctx.fillText(s, x, y);
+  ctx.restore();
+}
+function line(pts, o = {}) { if ((o.a ?? 1) <= 0.003 || pts.length < 2) return; ctx.save(); ctx.globalAlpha = o.a ?? 1; ctx.strokeStyle = o.color || C.fg; ctx.lineWidth = o.w || 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (o.dash) ctx.setLineDash(o.dash); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) ctx.lineTo(p[0], p[1]); ctx.stroke(); ctx.restore(); }
+function partial(pts, p) { if (p >= 1) return pts; const n = Math.max(2, Math.floor(pts.length * p)); return pts.slice(0, n); }
+function circle(x, y, r, o = {}) { if ((o.a ?? 1) <= 0.003 || r <= 0) return; ctx.save(); ctx.globalAlpha = o.a ?? 1; ctx.beginPath(); ctx.arc(x, y, r, o.from || 0, o.to ?? Math.PI * 2);
+  if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); } if (o.stroke) { ctx.strokeStyle = o.stroke; ctx.lineWidth = o.w || 3; if (o.dash) ctx.setLineDash(o.dash); ctx.stroke(); } ctx.restore(); }
+function rect(x, y, w, h, o = {}) { if ((o.a ?? 1) <= 0.003) return; ctx.save(); ctx.globalAlpha = o.a ?? 1; if (o.fill) { ctx.fillStyle = o.fill; ctx.fillRect(x, y, w, h); } if (o.stroke) { ctx.strokeStyle = o.stroke; ctx.lineWidth = o.w || 2; ctx.strokeRect(x, y, w, h); } ctx.restore(); }
+function rrect(x, y, w, h, r, o = {}) { if ((o.a ?? 1) <= 0.003) return; ctx.save(); ctx.globalAlpha = o.a ?? 1; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); } if (o.stroke) { ctx.strokeStyle = o.stroke; ctx.lineWidth = o.w || 2; ctx.stroke(); } ctx.restore(); }
+function img(cv, x, y, s, o = {}) { if ((o.a ?? 1) <= 0.003) return; ctx.save(); ctx.globalAlpha = o.a ?? 1; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const sc = o.scale ?? 1; const w = s * sc; if (o.clipCircle) { ctx.beginPath(); ctx.arc(o.clipCircle[0], o.clipCircle[1], o.clipCircle[2], 0, Math.PI * 2); ctx.clip(); }
+  ctx.drawImage(cv, x - w / 2, y - w / 2, w, w); ctx.restore(); }
+function arrow(x0, y0, x1, y1, o = {}) { const p = o.p ?? 1; if (p <= 0) return; const x = lerp(x0, x1, p), y = lerp(y0, y1, p); line([[x0, y0], [x, y]], o);
+  const ang = Math.atan2(y1 - y0, x1 - x0), L = o.head || 16; if (p > 0.6) line([[x - L * Math.cos(ang - 0.45), y - L * Math.sin(ang - 0.45)], [x, y], [x - L * Math.cos(ang + 0.45), y - L * Math.sin(ang + 0.45)]], o); }
+function glow(x, y, r, color, a) { if (a <= 0.003) return; ctx.save(); const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, color); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.globalAlpha = a; ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.restore(); }
+// a math expression built from pieces: [{s, italic, color, sub, sup, size}] laid out left-to-right; each piece pops in on its own
+function expr(pieces, x, y, o = {}) {
+  const size = o.size || 52; let cx = x; const pos = [];
+  ctx.save();
+  for (const p of pieces) { const sz = p.sub || p.sup ? size * 0.62 : size * (p.scale || 1); ctx.font = `${p.italic ? 'italic ' : ''}${p.weight || 400} ${sz}px ${F[p.font || 'math']}`; const w = ctx.measureText(p.s).width; pos.push([cx, w, sz]); cx += w + (p.gap ?? size * 0.08); }
+  ctx.restore();
+  const total = cx - x, off = o.align === 'center' ? -total / 2 : 0;
+  pieces.forEach((p, i) => {
+    const k = o.t == null ? 1 : eback(seg(o.t, i * (o.stagger ?? 0.06), 0.45));
+    const [px, , sz] = pos[i]; const dy = p.sub ? size * 0.28 : p.sup ? -size * 0.42 : 0;
+    txt(p.s, px + off, y + dy + (1 - clamp(k)) * 30, { size: sz, font: p.font || 'math', italic: p.italic, weight: p.weight, color: p.color || o.color || C.fg, a: (o.a ?? 1) * clamp(k) });
+  });
+  return total;
+}
+function tag(s, a) { txt(s, 96, 92, { size: 26, color: C.dim, a, ls: 2 }); }
+function heading(s, t, a = 1, sub) { txt(s, 96, 190, { size: 64, font: 'serif', weight: 700, a, rise: t, stagger: 0.025 });
+  if (sub) txt(sub, 98, 250, { size: 30, color: C.dim, a: a * eout(seg(t, 0.4, 0.6)) }); }
+function bar(t, a, b) { // thin accent line that sweeps under the heading
+  const p = eexpo(seg(t, a, 0.8)), q = eexpo(seg(t, b - 0.6, 0.6)); line([[96 + 600 * q, 214], [96 + 600 * p, 214]], { color: C.amber, w: 3, a: p > q ? 1 : 0 }); }
+function caption(s, t, a, b) { const k = win(t, a, b, 0.35, 0.35); if (k <= 0) return; ctx.save(); txt(s, W / 2, H - 64 + (1 - eout(seg(t, a, 0.4))) * 20, { size: 36, align: 'center', a: k }); ctx.restore(); }
+function wipe(t, a, d, color = C.amber) { // full-screen diagonal wipe used as a transition
+  const p = seg(t, a, d); if (p <= 0 || p >= 1) return; const x = lerp(-W * 0.3, W * 1.3, eio(p));
+  ctx.save(); ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x - 260, 0); ctx.lineTo(x + 120, 0); ctx.lineTo(x - 40, H); ctx.lineTo(x - 420, H); ctx.fill(); ctx.restore(); }
+
+// ---------- data ----------
+let SIM = null, SIMS = null, CENT = null;
+function prepare() {
+  SIM = lenia2d(ORB.m, ORB.s, 700);
+  CENT = SIM.A.map(a => com(a, SIM.n));
+  SIMS = [0.17, 0.15, 0.12].map(m => lenia2d(m, ORB.s, 360));
+}
+function orbAt(i) { i = clamp(Math.floor(i), 0, SIM.A.length - 1); const j0 = Math.max(0, i - 8), j1 = Math.min(CENT.length - 1, i + 8);
+  // smooth centre (unwrapped)
+  let sy = 0, sx = 0, n = 0, py = CENT[j0][0], px = CENT[j0][1], uy = py, ux = px;
+  for (let j = j0; j <= j1; j++) { let [y, x] = CENT[j]; let dy = y - py, dx = x - px; if (dy > 64) dy -= 128; if (dy < -64) dy += 128; if (dx > 64) dx -= 128; if (dx < -64) dx += 128; uy += dy; ux += dx; py = y; px = x; sy += uy; sx += ux; n++; }
+  return { i, cy: sy / n, cx: sx / n }; }
+
+// ======================= SCENES =======================
+const S = [];
+function scene(name, dur, fn) { S.push({ name, dur, fn }); }
+
+// part card
+function card(num, title, sub) {
+  return t => {
+    const out = 1 - eio(seg(t, 2.7, 0.5));
+    const p = eexpo(seg(t, 0.1, 0.9));
+    rect(0, H / 2 - 2, W * p, 4, { fill: C.amber, a: 0.9 * out });
+    txt(num, W / 2, H / 2 - 70, { size: 34, color: C.amber, align: 'center', weight: 700, ls: 8, a: out * eout(seg(t, 0.3, 0.5)) });
+    txt(title, W / 2, H / 2 + 100, { size: 96, font: 'serif', weight: 700, align: 'center', rise: t - 0.35, stagger: 0.05, a: out });
+    txt(sub, W / 2, H / 2 + 170, { size: 32, color: C.dim, align: 'center', a: out * eout(seg(t, 1.0, 0.6)) });
+  };
+}
+scene('card1', 3.2, card('PART 01', '二维 Lenia', '一个连续的「生命游戏」是怎么动起来的'));
+
+// --- S1: Life -> Lenia ---
+const LIFE = (() => { let g = new Uint8Array(16 * 16); [[1, 2], [2, 3], [3, 1], [3, 2], [3, 3]].forEach(([y, x]) => g[(y + 3) * 16 + x + 3] = 1); const out = [g];
+  for (let s = 0; s < 60; s++) { const ng = new Uint8Array(256); for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { let n = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dy || dx) n += g[((y + dy + 16) % 16) * 16 + (x + dx + 16) % 16];
+    ng[y * 16 + x] = n === 3 || (g[y * 16 + x] && n === 2) ? 1 : 0; } g = ng; out.push(g); } return out; })();
+scene('life', 10, t => {
+  tag('01 · 二维 LENIA', win(t, 0, 10));
+  heading('从「生命游戏」到 Lenia', t, win(t, 0, 10));
+  bar(t, 0.3, 10);
+  const S0 = 560, x0 = 290, y0 = 330, c = S0 / 16;
+  const morph = eio(seg(t, 4.2, 1.6)); // squares -> soft field
+  const gi = Math.floor(t / 0.32) % LIFE.length, g = LIFE[Math.min(gi, LIFE.length - 1)];
+  const a1 = eout(seg(t, 0.6, 0.6)) * (1 - eio(seg(t, 9.4, 0.5)));
+  if (morph < 1) for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const on = g[y * 16 + x]; const k = eback(seg(t, 0.6 + (x + y) * 0.015, 0.4));
+    const s = (c - 6) * k * (1 - morph);
+    rrect(x0 + x * c + (c - s) / 2, y0 + y * c + (c - s) / 2, s, s, 4 * (1 - morph) + s / 2 * morph, { fill: on ? C.amber : '#1a1b20', a: a1 });
+  }
+  // continuous field fades in where the grid was
+  const o = orbAt(80 + t * 30);
+  const fc = fieldCanvas('life' + o.i, SIM.A[o.i], 128, o.cy, o.cx, 22);
+  img(fc, x0 + S0 / 2, y0 + S0 / 2, S0, { a: morph * a1, scale: 0.9 + 0.1 * morph });
+  // the value label morphs
+  const lx = 1180;
+  txt('每个格子的状态', lx, 420, { size: 34, color: C.dim, a: a1 * eout(seg(t, 1.2, 0.5)) });
+  const v0 = 1 - eio(seg(t, 4.0, 0.8)), v1 = eio(seg(t, 4.6, 0.8));
+  txt('0  或  1', lx, 540, { size: 110, font: 'math', weight: 700, color: C.amber, a: a1 * v0 * eout(seg(t, 1.5, 0.5)) });
+  txt('0.00 … 1.00', lx, 540, { size: 110, font: 'math', weight: 700, color: C.cream, a: a1 * v1 });
+  // gradient strip under it
+  if (v1 > 0) { ctx.save(); ctx.globalAlpha = a1 * v1; const gr = ctx.createLinearGradient(lx, 0, lx + 620, 0); CM.forEach((c, i) => gr.addColorStop(i / (CM.length - 1), `rgb(${c})`)); ctx.fillStyle = gr; ctx.fillRect(lx, 580, 620 * eexpo(seg(t, 4.8, 1.0)), 18); ctx.restore(); }
+  txt('康威生命游戏：生 / 死，一格一格地跳', lx, 690, { size: 32, a: a1 * v0 * eout(seg(t, 2.0, 0.5)) });
+  txt('Lenia：浓度、空间、时间都连续', lx, 690, { size: 32, a: a1 * v1 });
+  caption('把开关换成连续的浓度，生命游戏就长出了「软体动物」', t, 6.2, 9.8);
+});
+
+// --- S2: kernel ---
+scene('kernel', 10, t => {
+  const A = win(t, 0, 10);
+  tag('01 · 二维 LENIA', A); heading('第一步：看邻居', t, A, '卷积核 K —— 按距离给周围的格子打分'); bar(t, 0.3, 10);
+  const cx = 560, cy = 620, R = 230;
+  // faint field behind
+  const o = orbAt(300); img(fieldCanvas('k', SIM.A[o.i], 128, o.cy, o.cx, 22), cx, cy, 640, { a: 0.22 * A });
+  // focus cell pulse
+  const pf = eback(seg(t, 0.8, 0.5)); rect(cx - 8 * pf, cy - 8 * pf, 16 * pf, 16 * pf, { fill: C.cream, a: A });
+  // ripples
+  for (let k = 0; k < 3; k++) { const p = seg(t, 1.2 + k * 0.35, 1.4); if (p > 0 && p < 1) circle(cx, cy, R * eout(p), { stroke: C.amber, w: 2, a: (1 - p) * A }); }
+  // the ring itself (kernel) as a radial gradient donut
+  const pr = eback(seg(t, 1.8, 0.9));
+  if (pr > 0) { ctx.save(); ctx.globalAlpha = A; const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * pr);
+    for (let i = 0; i <= 20; i++) { const r = i / 20; const v = r > 0 && r < 1 ? Math.exp(4 - 1 / (r * (1 - r))) : 0; g.addColorStop(r, `rgba(240,164,92,${v * 0.85})`); }
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * pr, 0, 7); ctx.fill(); ctx.restore(); }
+  // radius dimension
+  const pd = eout(seg(t, 2.8, 0.7)); line([[cx, cy], [cx + R * pd, cy]], { color: C.fg, w: 2, a: A }); txt('R', cx + R * pd / 2, cy - 16, { size: 40, font: 'math', italic: true, align: 'center', a: A * pd });
+  // profile plot
+  const px = 1040, py = 760, pw = 720, ph = 330, pa = A * eout(seg(t, 3.2, 0.5));
+  line([[px, py - ph - 20], [px, py], [px + pw + 20, py]], { color: C.dim, w: 2, a: pa });
+  txt('距离 r / R', px + pw, py + 46, { size: 26, color: C.dim, align: 'right', a: pa }); txt('0', px, py + 40, { size: 24, color: C.dim, align: 'center', a: pa }); txt('1', px + pw, py + 40, { size: 24, color: C.dim, align: 'center', a: pa });
+  const pts = []; for (let i = 0; i <= 300; i++) { const r = i / 300; const v = r > 0 && r < 1 ? Math.exp(4 - 1 / (r * (1 - r))) : 0; pts.push([px + r * pw, py - v * ph]); }
+  const pp = eio(seg(t, 3.5, 2.0)); line(partial(pts, pp), { color: C.amber, w: 5, a: A });
+  if (pp > 0 && pp < 1) { const q = pts[Math.floor(pp * 300)]; circle(q[0], q[1], 9, { fill: C.cream, a: A }); }
+  // labels at the peak
+  const pk = eback(seg(t, 5.4, 0.5)); txt('最在意这一圈', px + pw / 2, py - ph - 40, { size: 30, color: C.amber, align: 'center', a: A * clamp(pk) });
+  expr([{ s: 'K', italic: true }, { s: '(' }, { s: 'r', italic: true }, { s: ')' }, { s: '∝' }, { s: 'exp' }, { s: '(' }, { s: '4' }, { s: '−' }, { s: '1 / r(1−r)', italic: true }, { s: ')' }], px, 330, { size: 50, t: t - 6.0, a: A });
+  caption('离得太近、太远都不算，最在意中间那一圈 —— 像一只环形的眼睛', t, 6.6, 9.8);
+});
+
+// --- S3: convolution ---
+scene('conv', 9, t => {
+  const A = win(t, 0, 9);
+  tag('01 · 二维 LENIA', A); heading('把打分加起来：邻域势 U', t, A); bar(t, 0.3, 9);
+  const o = orbAt(320), half = 22, S0 = 540;
+  const xa = 520, xu = 1400, y = 580;
+  const fa = fieldCanvas('cA', SIM.A[o.i], 128, o.cy, o.cx, half), U = SIM.U[o.i];
+  let umax = 0; for (const v of U) umax = Math.max(umax, v);
+  const fu = fieldCanvas('cU', U, 128, o.cy, o.cx, half, 'A', 1 / umax * 0.95);
+  img(fa, xa, y, S0, { a: A * eout(seg(t, 0.6, 0.5)) });
+  txt('状态 A', xa, y + S0 / 2 + 50, { size: 34, weight: 700, align: 'center', a: A });
+  // scanning ring path (lissajous) and U revealed only along the scanned trail
+  const sp = seg(t, 1.6, 6.4);
+  const ROWS = 7; const path = s => { const r = Math.min(ROWS - 1, Math.floor(s * ROWS)), f = s * ROWS - r; const yy = 4 + r * (2 * half - 8) / (ROWS - 1); const xx = 4 + (r % 2 ? 1 - f : f) * (2 * half - 8); return [xx, yy]; };
+  const sc = S0 / (2 * half);
+  ctx.save(); ctx.beginPath();
+  { const r = Math.min(ROWS, sp * ROWS), rr = Math.floor(r), f = r - rr, bh = S0 / ROWS; ctx.rect(xu - S0 / 2, y - S0 / 2, S0, rr * bh); if (rr < ROWS) { const [px] = path(sp); const xx = xu - S0 / 2 + px * sc; if (rr % 2) ctx.rect(xx, y - S0 / 2 + rr * bh, xu + S0 / 2 - xx, bh); else ctx.rect(xu - S0 / 2, y - S0 / 2 + rr * bh, xx - xu + S0 / 2, bh); } }
+  ctx.clip(); img(fu, xu, y, S0, { a: A }); ctx.restore();
+  rect(xu - S0 / 2, y - S0 / 2, S0, S0, { stroke: C.faint, w: 2, a: A });
+  txt('邻域势 U', xu, y + S0 / 2 + 50, { size: 34, weight: 700, align: 'center', a: A });
+  if (sp > 0 && sp < 1) {
+    const [px, py] = path(sp); const ax = xa - S0 / 2 + px * sc, ay = y - S0 / 2 + py * sc, ux = xu - S0 / 2 + px * sc, uy = y - S0 / 2 + py * sc;
+    circle(ax, ay, 13 * sc, { stroke: C.amber, w: 3, a: A }); glow(ax, ay, 13 * sc, 'rgba(240,164,92,0.25)', A); circle(ax, ay, 4, { fill: C.cream, a: A });
+    line([[ax, ay], [ux, uy]], { color: C.amber, w: 1.5, a: 0.5 * A, dash: [6, 8] });
+    circle(ux, uy, 10, { fill: C.cream, a: A });
+    const uv = U[((Math.floor(o.cy) - half + Math.floor(py)) % 128 + 128) % 128 * 128 + ((Math.floor(o.cx) - half + Math.floor(px)) % 128 + 128) % 128];
+    txt('U = ' + uv.toFixed(3), (xa + xu) / 2, y - S0 / 2 - 10, { size: 40, font: 'math', color: C.amber, align: 'center', a: A });
+  }
+  expr([{ s: 'U', italic: true }, { s: '=' }, { s: 'K', italic: true }, { s: '⊛' }, { s: 'A', italic: true }], (xa + xu) / 2, y + 20, { size: 56, align: 'center', t: t - 1.0, a: A });
+  caption('每个格子把半径 R 内的邻居按 K 加权求和，得到它周围「有多挤」', t, 2.2, 8.8);
+});
+
+// --- S4: growth function ---
+scene('growth', 10, t => {
+  const A = win(t, 0, 10);
+  tag('01 · 二维 LENIA', A); heading('第二步：长，还是死？', t, A, '增长函数 G —— U 恰好在 μ 附近才生长'); bar(t, 0.3, 10);
+  const mu = ORB.m, sg = ORB.s, px = 140, py = 690, pw = 1000, ph = 200, umax = 0.32;
+  const pa = A * eout(seg(t, 0.8, 0.5));
+  line([[px, py - ph - 20], [px, py + ph + 20]], { color: C.dim, w: 2, a: pa }); line([[px, py], [px + pw + 20, py]], { color: C.dim, w: 2, a: pa });
+  txt('+1', px - 16, py - ph + 8, { size: 24, color: C.dim, align: 'right', a: pa }); txt('−1', px - 16, py + ph + 8, { size: 24, color: C.dim, align: 'right', a: pa }); txt('U', px + pw + 30, py + 10, { size: 32, font: 'math', italic: true, color: C.dim, a: pa });
+  const G = u => 2 * Math.exp(-((u - mu) ** 2) / (2 * sg * sg)) - 1;
+  const pts = []; for (let i = 0; i <= 500; i++) { const u = i / 500 * umax; pts.push([px + u / umax * pw, py - G(u) * ph]); }
+  const pp = eio(seg(t, 1.0, 1.6)); const vis = partial(pts, pp);
+  // colour the curve by sign
+  for (let i = 1; i < vis.length; i++) line([vis[i - 1], vis[i]], { color: vis[i][1] < py ? C.amber : C.teal, w: 5, a: A });
+  const mx = px + mu / umax * pw;
+  const am = A * eout(seg(t, 2.6, 0.4)); line([[mx, py - ph], [mx, py + ph]], { color: C.faint, w: 2, a: am, dash: [8, 8] });
+  txt('μ', mx, py + ph + 52, { size: 40, font: 'math', italic: true, align: 'center', a: am });
+  // zone labels
+  [['太空旷', px + 0.05 / umax * pw, C.teal, 3.0], ['刚刚好', mx, C.amber, 3.3], ['太拥挤', px + 0.25 / umax * pw, C.teal, 3.6]].forEach(([s, x, c, ts]) => {
+    const k = eback(seg(t, ts, 0.5)); txt(s, x, py - ph - 34, { size: 34, weight: 700, color: c, align: 'center', a: A * clamp(k) }); });
+  // slider: a marker runs along U, its G value drives a bar
+  const sp = eio(seg(t, 4.2, 4.2)); const u = sp * umax * 0.92 + 0.01;
+  if (t > 4.2) {
+    const x = px + u / umax * pw, g = G(u), y = py - g * ph;
+    line([[x, py], [x, y]], { color: C.fg, w: 2, a: A * 0.6 }); circle(x, y, 12, { fill: g > 0 ? C.amber : C.teal, a: A }); circle(x, py, 6, { fill: C.fg, a: A });
+    const bx = 1400, by = 690, bh = 200; rect(bx, by - bh, 90, 2 * bh, { stroke: C.faint, a: A }); rect(bx, Math.min(by, by - g * bh), 90, Math.abs(g * bh), { fill: g > 0 ? C.amber : C.teal, a: A });
+    txt('G = ' + (g >= 0 ? '+' : '−') + Math.abs(g).toFixed(2), bx + 130, by + 12, { size: 44, font: 'math', color: g > 0 ? C.amber : C.teal, a: A });
+    txt(g > 0 ? '生长' : '衰减', bx + 130, by + 70, { size: 34, weight: 700, color: g > 0 ? C.amber : C.teal, a: A });
+  }
+  expr([{ s: 'G', italic: true }, { s: '(' }, { s: 'u', italic: true }, { s: ')' }, { s: '=' }, { s: '2' }, { s: 'exp' }, { s: '(−' }, { s: '(u−μ)² / 2σ²', italic: true }, { s: ')' }, { s: '−' }, { s: '1' }], 1180, 330, { size: 44, t: t - 1.4, a: A });
+  caption('太空旷会饿死，太拥挤会憋死，只有「刚刚好」的地方才会长', t, 4.4, 9.8);
+});
+
+// --- S5: the loop + gliding ---
+scene('update', 12, t => {
+  const A = win(t, 0, 12);
+  tag('01 · 二维 LENIA', A); heading('第三步：一小步，一小步', t, A); bar(t, 0.3, 12);
+  // loop diagram on the left, shrinking aside at ~5.5 s
+  const sh = eio(seg(t, 5.2, 1.0)); const cx = lerp(W / 2, 470, sh), cy = lerp(600, 600, sh), R = lerp(240, 190, sh);
+  const nodes = [['A', '状态', -90], ['U', '邻域势', 30], ['G', '增长', 150]];
+  const ops = [['⊛ K', -30], ['G(·)', 90], ['+ Δt·G', 210]];
+  nodes.forEach(([s, sub, ang], i) => { const k = eback(seg(t, 0.8 + i * 0.5, 0.5)); const x = cx + R * Math.cos(ang * Math.PI / 180), y = cy + R * Math.sin(ang * Math.PI / 180);
+    circle(x, y, 62 * k, { fill: '#17181d', stroke: i === 0 ? C.amber : C.fg, w: 3, a: A }); txt(s, x, y + 18, { size: 54, font: 'math', italic: true, align: 'center', a: A * clamp(k) });
+    txt(sub, x, y + 100, { size: 26, color: C.dim, align: 'center', a: A * clamp(k) * (1 - sh * 0.6) }); });
+  ops.forEach(([s, ang], i) => { const p = eio(seg(t, 1.2 + i * 0.5, 0.6)); const a0 = (ang - 50) * Math.PI / 180, a1 = (ang + 50) * Math.PI / 180;
+    if (p > 0) { ctx.save(); ctx.globalAlpha = A; ctx.strokeStyle = C.amber; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R, a0, lerp(a0, a1, p)); ctx.stroke(); ctx.restore();
+      const ea = lerp(a0, a1, p), ex = cx + R * Math.cos(ea), ey = cy + R * Math.sin(ea); const tg = ea + Math.PI / 2; line([[ex - 16 * Math.cos(tg - 0.5), ey - 16 * Math.sin(tg - 0.5)], [ex, ey], [ex - 16 * Math.cos(tg + 0.5), ey - 16 * Math.sin(tg + 0.5)]], { color: C.amber, w: 3, a: A }); }
+    const am = ang * Math.PI / 180; txt(s, cx + (R + 70) * Math.cos(am), cy + (R + 70) * Math.sin(am) + 12, { size: 34, font: 'math', color: C.amber, align: 'center', a: A * eout(seg(t, 1.5 + i * 0.5, 0.4)) }); });
+  // a pulse travelling round the loop
+  if (t > 2.8) { const a = (-90 + ((t - 2.8) * 140) % 360) * Math.PI / 180; glow(cx + R * Math.cos(a), cy + R * Math.sin(a), 40, 'rgba(255,230,190,0.9)', A); }
+  expr([{ s: 'A', italic: true }, { s: '←' }, { s: 'clip' }, { s: '(' }, { s: 'A', italic: true }, { s: '+' }, { s: 'Δt', italic: true }, { s: '·' }, { s: 'G', italic: true }, { s: '(' }, { s: 'K', italic: true }, { s: '⊛' }, { s: 'A', italic: true }, { s: ')' }, { s: ', 0, 1)' }], lerp(W / 2, 470, sh), lerp(930, 312, sh), { size: lerp(50, 34, sh), align: 'center', t: t - 3.0, a: A });
+  txt('Δt = 1/T：每一步只改一点点，连起来就是连续的运动', W / 2, 1010, { size: 30, color: C.dim, align: 'center', a: A * win(t, 3.6, 5.4) });
+  // right: Orbium gliding with growth overlay
+  const ar = A * eout(seg(t, 5.6, 0.7));
+  if (ar > 0) {
+    const o = orbAt(150 + (t - 5.6) * 30 * 1.0), S0 = 520;
+    img(fieldCanvas('uA' + o.i, SIM.A[o.i], 128, o.cy, o.cx, 20), 1060, 600, S0, { a: ar });
+    const dA = new Float32Array(128 * 128), A0 = SIM.A[o.i], A1 = SIM.A[Math.min(SIM.A.length - 1, o.i + 1)]; for (let i = 0; i < dA.length; i++) dA[i] = clamp((A1[i] - A0[i]) * 14, -1, 1);
+    img(fieldCanvas('uD' + o.i, dA, 128, o.cy, o.cx, 20, 'G'), 1620, 600, S0, { a: ar * eout(seg(t, 6.6, 0.6)) });
+    txt('A：Orbium 在滑行', 1060, 910, { size: 30, weight: 700, align: 'center', a: ar });
+    txt('ΔA：前沿长（橙）· 尾部消（蓝）', 1620, 910, { size: 30, weight: 700, align: 'center', a: ar * eout(seg(t, 6.6, 0.6)) });
+  }
+  caption('前面一直在长、后面一直在消 —— 整个身体就这样「滑」了出去', t, 7.4, 11.8);
+});
+
+// --- S6: parameter sensitivity ---
+scene('params', 8.5, t => {
+  const A = win(t, 0, 8.5);
+  tag('01 · 二维 LENIA', A); heading('μ 差一点点，命运完全不同', t, A); bar(t, 0.3, 8.5);
+  const labels = [['μ = 0.17', '饿死', C.teal], ['μ = 0.15', '稳定滑行', C.amber], ['μ = 0.12', '疯长铺满', C.red]];
+  const i = clamp(Math.floor((t - 1.0) * 36), 0, 359);
+  labels.forEach(([l, r, col], k) => {
+    const x = 420 + k * 540, y = 600, s = 440; const sl = eback(seg(t, 0.5 + k * 0.15, 0.6));
+    const a = SIMS[k].A[i]; const c = k === 1 ? com(a, 128) : [64, 64];
+    const fc = fieldCanvas('p' + k + '_' + i, a, 128, c[0], c[1], k === 1 ? 24 : 64);
+    rrect(x - s / 2 - 6, y - s / 2 - 6 + (1 - sl) * 80, s + 12, s + 12, 14, { stroke: C.faint, w: 2, a: A * clamp(sl) });
+    img(fc, x, y + (1 - sl) * 80, s, { a: A * clamp(sl) });
+    txt(l, x, y + s / 2 + 64, { size: 36, font: 'math', align: 'center', a: A * clamp(sl) });
+    const st = eback(seg(t, 4.2 + k * 0.25, 0.4)); ctx.save(); ctx.translate(x, y - s / 2 + 40); ctx.rotate(-0.08); ctx.scale(lerp(1.6, 1, clamp(st)), lerp(1.6, 1, clamp(st)));
+    rrect(-90, -34, 180, 60, 8, { fill: col, a: A * clamp(st) * 0.92 }); txt(r, 0, 8, { size: 30, weight: 700, color: '#0b0c0f', align: 'center', base: 'middle', a: A * clamp(st) }); ctx.restore();
+  });
+  caption('能活下来的「物种」只在参数空间里很窄的一条缝里 —— 要一个个找出来', t, 4.8, 8.4);
+});
+
+scene('card2', 3.2, card('PART 02', '走向三维', '同一套规则，放进一个立方体'));
+
+// --- S7: ring -> shells ---
+scene('shell', 10, t => {
+  const A = win(t, 0, 10);
+  tag('02 · 走向三维', A); heading('圆环，变成一层层球壳', t, A); bar(t, 0.3, 10);
+  const cx = 600, cy = 640, R = 280;
+  const tilt = eio(seg(t, 1.0, 1.6)); // 2D ring -> rotating sphere
+  const rot = t * 0.5;
+  const bs = [1, 5 / 12, 1 / 12, 1 / 6];
+  const nShell = 4, show = k => eback(seg(t, 3.0 + k * 0.45, 0.5));
+  for (let k = nShell - 1; k >= 0; k--) {
+    const rr = R * (k + 0.5) / nShell, sk = tilt < 1 ? 1 : clamp(show(k)); const a = A * bs[k] * 0.9 + 0.1 * A;
+    if (k > 0 && tilt >= 1 && show(k) <= 0) continue;
+    // latitude ellipses + longitude ellipses make the shell read as a sphere
+    const col = `rgba(240,164,92,${0.25 + 0.6 * bs[k]})`;
+    for (let j = -3; j <= 3; j++) { const la = j / 4 * Math.PI / 2, ry = rr * Math.cos(la) * sk, yy = cy + rr * Math.sin(la) * Math.cos(0.5) * tilt * sk;
+      ctx.save(); ctx.globalAlpha = a * (k === 0 || tilt >= 1 ? 1 : 0); ctx.strokeStyle = col; ctx.lineWidth = j === 0 ? 3 : 1.5; ctx.beginPath(); ctx.ellipse(cx, yy, ry, Math.max(0.5, ry * Math.sin(0.5) * tilt + (1 - tilt) * ry * (j === 0 ? 1 : 0)), 0, 0, 7); if (j === 0 || tilt > 0.05) ctx.stroke(); ctx.restore(); }
+    for (let j = 0; j < 6; j++) { const lo = rot + j * Math.PI / 6; ctx.save(); ctx.globalAlpha = a * tilt; ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(cx, cy, Math.abs(rr * Math.cos(lo)) * sk, rr * sk, 0, 0, 7); ctx.stroke(); ctx.restore(); }
+  }
+  glow(cx, cy, R * 1.1, 'rgba(240,164,92,0.18)', A * tilt);
+  txt(tilt < 0.5 ? '二维：一圈' : '三维：一层层球壳', cx, cy + R + 90, { size: 34, weight: 700, align: 'center', a: A });
+  // multi-ring profile
+  const px = 1060, py = 780, pw = 720, ph = 320, pa = A * eout(seg(t, 3.0, 0.5));
+  line([[px, py - ph - 20], [px, py], [px + pw + 20, py]], { color: C.dim, w: 2, a: pa });
+  txt('距离 r / R', px + pw, py + 46, { size: 26, color: C.dim, align: 'right', a: pa });
+  const pts = []; for (let i = 0; i <= 480; i++) { const r = i / 480, br = r * 4, k = Math.min(3, br | 0), f = br % 1; const v = f > 0 && f < 1 ? bs[k] * Math.exp(4 - 1 / (f * (1 - f))) : 0; pts.push([px + r * pw, py - v * ph]); }
+  line(partial(pts, eio(seg(t, 3.2, 2.2))), { color: C.amber, w: 5, a: A });
+  ['1', '5/12', '1/12', '1/6'].forEach((s, k) => { const kk = eback(seg(t, 3.4 + k * 0.45, 0.4)); txt(s, px + (k + 0.5) / 4 * pw, py - bs[k] * ph - 26, { size: 30, font: 'math', align: 'center', a: A * clamp(kk) }); });
+  txt('丙雫球的核有 4 层', px, 350, { size: 36, weight: 700, a: A * eout(seg(t, 2.8, 0.5)) });
+  expr([{ s: 'b', italic: true }, { s: '=' }, { s: '[1, 5/12, 1/12, 1/6]' }], px, 410, { size: 40, t: t - 3.2, a: A, color: C.amber });
+  caption('公式一字不改，只是「距离」从平面上的圆变成了空间里的球', t, 6.4, 9.8);
+});
+
+// --- S8: cost & FFT ---
+function isoCube(cx, cy, s, a, col = C.fg, w = 2) { // isometric wireframe cube
+  const P = (x, y, z) => [cx + (x - z) * s * 0.866, cy + (x + z) * s * 0.5 - y * s];
+  const e = [[0, 0, 0, 1, 0, 0], [1, 0, 0, 1, 0, 1], [1, 0, 1, 0, 0, 1], [0, 0, 1, 0, 0, 0], [0, 1, 0, 1, 1, 0], [1, 1, 0, 1, 1, 1], [1, 1, 1, 0, 1, 1], [0, 1, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0], [1, 0, 0, 1, 1, 0], [1, 0, 1, 1, 1, 1], [0, 0, 1, 0, 1, 1]];
+  e.forEach(q => line([P(q[0] - .5, q[1] - .5, q[2] - .5), P(q[3] - .5, q[4] - .5, q[5] - .5)], { color: col, w, a })); return P; }
+const fmt = n => Math.round(n).toLocaleString('en-US');
+scene('fft', 11, t => {
+  const A = win(t, 0, 11);
+  tag('02 · 走向三维', A); heading('代价：算力爆炸', t, A); bar(t, 0.3, 11);
+  const ph1 = 1 - eio(seg(t, 5.6, 0.6));
+  // cube grows, counter rolls
+  const k = eback(seg(t, 0.6, 0.8)); const P = isoCube(470, 640, 300 * clamp(k), A * ph1, C.fg, 2);
+  for (let i = 1; i < 8; i++) { const f = i / 8 - 0.5; line([P(f, -0.5, -0.5), P(f, -0.5, 0.5)], { color: C.faint, w: 1, a: A * ph1 * eout(seg(t, 1.0, 0.6)) }); line([P(-0.5, -0.5, f), P(0.5, -0.5, f)], { color: C.faint, w: 1, a: A * ph1 * eout(seg(t, 1.0, 0.6)) }); }
+  glow(470, 640, 60 + 40 * eout(seg(t, 2.2, 0.6)), 'rgba(240,164,92,0.8)', A * ph1 * eout(seg(t, 2.2, 0.5)));
+  const rows = [['世界', '128 × 128 × 128', 2097152, ' 个格子', 1.2], ['每个格子的邻居', '半径 10 的球', 4189, ' 个', 2.2], ['每一步要做', '直接卷积', 8.8e9, ' 次乘加', 3.2]];
+  rows.forEach(([l, m, n, u, ts], i) => { const a = A * ph1 * eout(seg(t, ts, 0.4)); const y = 420 + i * 150;
+    txt(l, 900, y, { size: 30, color: C.dim, a }); txt(m, 900, y + 56, { size: 34, a });
+    const v = n * eexpo(seg(t, ts + 0.1, 1.0)); const s = n > 1e8 ? (v / 1e8).toFixed(0) + ' 亿' : fmt(v);
+    txt('≈ ' + s + u, 1820, y + 56, { size: i === 2 ? 64 : 48, weight: 700, align: 'right', color: i === 2 ? C.red : C.fg, a }); });
+  // phase 2: FFT pipeline
+  const p2 = eout(seg(t, 6.0, 0.6));
+  if (p2 > 0) {
+    txt('傅里叶变换：卷积 = 频域里逐点相乘', 96, 330, { size: 40, weight: 700, a: A * p2 });
+    const boxes = [['A', C.fg], ['𝓕', C.amber], ['× 𝓕(K)', C.amber], ['𝓕⁻¹', C.amber], ['U', C.fg]];
+    boxes.forEach(([s, col], i) => { const x = 220 + i * 330, y = 560, kk = eback(seg(t, 6.2 + i * 0.25, 0.45));
+      rrect(x - 110, y - 70 * clamp(kk), 220, 140 * clamp(kk), 18, { stroke: col, w: 3, fill: '#15161b', a: A * clamp(kk) });
+      txt(s, x, y + 18, { size: 52, font: 'math', italic: s === 'A' || s === 'U', align: 'center', color: col, a: A * clamp(kk) });
+      if (i < 4) arrow(x + 120, y, x + 210, y, { p: eout(seg(t, 6.4 + i * 0.25, 0.4)), color: C.dim, w: 3, a: A }); });
+    const ka = eout(seg(t, 8.0, 0.6));
+    txt('每步 ≈ 0.9 亿次蝶形运算', 220 - 110, 800, { size: 44, a: A * ka });
+    const st = eback(seg(t, 8.6, 0.5)); ctx.save(); ctx.translate(1500, 800); ctx.rotate(-0.1); const sc = lerp(2.2, 1, clamp(st)); ctx.scale(sc, sc);
+    txt('快 ~100×', 0, 0, { size: 84, weight: 700, color: C.amber, align: 'center', base: 'middle', a: A * clamp(st) }); ctx.restore();
+  }
+  caption('K 是固定的，只需变换一次；每一步只要一次正变换、一次乘法、一次逆变换', t, 7.6, 10.8);
+});
+
+// --- S9: slicing into an atlas ---
+function sliceCanvas(z, n = 64) { // a hollow, lumpy ball cut at height z (synthetic but shaped like a Lenia body)
+  const key = 'sl' + z; if (tiles.has(key)) return tiles.get(key);
+  const cv = new OffscreenCanvas(n, n), x = cv.getContext('2d'), im = x.createImageData(n, n);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const X = (i - n / 2) / (n / 2), Y = (j - n / 2) / (n / 2), Z = z;
+    const r = Math.hypot(X, Y, Z); const holes = [[0.35, 0.2, 0.3], [-0.3, 0.25, -0.2], [0.1, -0.4, 0.1], [-0.2, -0.1, 0.45]].reduce((m, h) => Math.min(m, Math.hypot(X - h[0], Y - h[1], Z - h[2])), 9);
+    let v = clamp(1 - Math.abs(r - 0.55) / 0.25) * clamp((holes - 0.12) / 0.15) + clamp(1 - r / 0.3) * 0.6;
+    const c = cmapA(v * 0.95); const o = (j * n + i) * 4; im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255; }
+  x.putImageData(im, 0, 0); tiles.set(key, cv); return cv;
+}
+scene('atlas', 10, t => {
+  const A = win(t, 0, 10);
+  tag('02 · 走向三维', A); heading('在 GPU 上：把立方体切成片', t, A, 'WebGL 只能画平面，于是把 128 层切片铺进一张大纹理'); bar(t, 0.3, 10);
+  const NS = 32, cols = 8, S0 = 190, gx = (W - 8 * (190 * 0.55 + 6)) / 2 + 300, gy = 350;
+  const fan = eio(seg(t, 1.2, 1.6)), fly = seg(t, 3.6, 3.2);
+  for (let j = NS - 1; j >= 0; j--) {
+    const z = j / (NS - 1) * 2 - 1;
+    // stacked & fanned position (isometric skew) -> grid tile
+    const sx = 540, sy = 800 - j * lerp(3, 9, fan);
+    const tx = gx + (j % cols) * (S0 * 0.55 + 6), ty = gy + Math.floor(j / cols) * (S0 * 0.55 + 6);
+    const q = eio(clamp(fly * 1.6 - j / NS * 0.6));
+    const x = lerp(sx, tx + S0 * 0.275, q), y = lerp(sy, ty + S0 * 0.275, q), sz = lerp(S0 * 1.6, S0 * 0.55, q);
+    ctx.save(); ctx.globalAlpha = A * eout(seg(t, 0.6 + j * 0.01, 0.4)); ctx.translate(x, y);
+    ctx.transform(1, 0, 0, lerp(0.5, 1, q), 0, 0); ctx.rotate(lerp(Math.PI / 4, 0, q));
+    ctx.drawImage(sliceCanvas(Math.round(z * 100) / 100), -sz / 2, -sz / 2, sz, sz);
+    ctx.strokeStyle = 'rgba(240,164,92,0.35)'; ctx.lineWidth = 1.5 / Math.max(0.3, lerp(0.5, 1, q)); ctx.strokeRect(-sz / 2, -sz / 2, sz, sz); ctx.restore();
+  }
+  const ag = A * eout(seg(t, 6.8, 0.5));
+  rect(gx - 8, gy - 8, cols * (S0 * 0.55 + 6) + 10, 4 * (S0 * 0.55 + 6) + 10, { stroke: C.amber, w: 2, a: ag });
+  txt('第 z 层 → 图集的第 z 格', gx, gy + 4 * (S0 * 0.55 + 6) + 60, { size: 32, weight: 700, a: ag });
+  caption('三维 FFT = 沿 x、y、z 各做一遍一维 FFT；每一遍都是一次全屏着色器', t, 7.2, 9.8);
+});
+
+// --- S10: volume rendering ---
+scene('render', 10, t => {
+  const A = win(t, 0, 10);
+  tag('02 · 走向三维', A); heading('把它画出来：体积光线步进', t, A); bar(t, 0.3, 10);
+  const ex = 170, ey = 640, bx = 520, by = 400, bw = 520;
+  // occupancy grid
+  const ag = A * eout(seg(t, 0.6, 0.5));
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const occ = (i === 1 || i === 2) && (j === 1 || j === 2); const skip = !occ && t > 6.0;
+    rect(bx + i * bw / 4, by + j * bw / 4, bw / 4, bw / 4, { stroke: C.faint, w: 1.5, a: ag }); if (skip) rect(bx + i * bw / 4 + 3, by + j * bw / 4 + 3, bw / 4 - 6, bw / 4 - 6, { fill: 'rgba(95,180,216,0.10)', a: A * eout(seg(t, 6.0 + (i + j) * 0.05, 0.3)) }); }
+  glow(bx + bw / 2, by + bw / 2, bw * 0.3, 'rgba(240,164,92,0.85)', ag);
+  circle(ex, ey, 16, { stroke: C.fg, w: 3, a: ag }); txt('视点', ex, ey + 60, { size: 26, color: C.dim, align: 'center', a: ag });
+  // rays fan out one after another; samples light up; a colour bar per ray accumulates
+  const NR = 9;
+  for (let r = 0; r < NR; r++) { const ty = by + 30 + r * (bw - 60) / (NR - 1); const p = eio(seg(t, 1.0 + r * 0.18, 1.2));
+    const x1 = bx + bw + 60, y1 = ey + (ty - ey) * (x1 - ex) / (bx + bw / 2 - ex);
+    line([[ex, ey], [lerp(ex, x1, p), lerp(ey, y1, p)]], { color: C.dim, w: 1.5, a: A * 0.6 });
+    let acc = 0, T = 1;
+    for (let s = 0; s < 16; s++) { const fx = bx + 16 + s * (bw - 32) / 15; if (fx > lerp(ex, x1, p)) break; const fy = ey + (y1 - ey) * (fx - ex) / (x1 - ex); if (fy < by || fy > by + bw) continue;
+      const d = Math.exp(-((fx - bx - bw / 2) ** 2 + (fy - by - bw / 2) ** 2) / (2 * (bw * 0.17) ** 2)); const inOcc = Math.abs(fx - bx - bw / 2) < bw / 4 && Math.abs(fy - by - bw / 2) < bw / 4;
+      if (t > 6.0 && !inOcc) continue; circle(fx, fy, 3 + 4 * d, { fill: d > 0.2 ? C.amber : C.fg, a: A * (0.5 + 0.5 * d) }); acc += T * d * 0.5; T *= 1 - d * 0.5; }
+    rrect(x1 + 30, y1 - 14, 34, 28, 6, { fill: `rgb(${cmapA(clamp(acc * 1.3)).map(Math.round)})`, a: A * eout(seg(t, 1.8 + r * 0.18, 0.4)) });
+  }
+  const notes = [[2.0, '沿每条视线每隔一小段取样，', '把浓度叠成颜色和透明度'], [4.0, '每个格子再朝光源取样一次，', '算出自身的阴影'], [6.0, '空的格子用 64³ 占用网格整块跳过，', '省下大部分计算']];
+  notes.forEach(([ts, a1, a2], i) => { const k = A * eout(seg(t, ts, 0.5)); const y = 430 + i * 160; rect(1240, y - 36, 6, 90 * eexpo(seg(t, ts, 0.6)), { fill: i === 2 ? C.teal : C.amber, a: k });
+    txt(a1, 1270, y, { size: 32, a: k }); txt(a2, 1270, y + 48, { size: 32, a: k }); });
+  // sun
+  const as = A * eout(seg(t, 3.8, 0.5)); circle(1000, 300, 26, { fill: '#ffe1a6', a: as }); for (let k = 0; k < 3; k++) arrow(980 - k * 26, 330 + k * 6, bx + bw * (0.66 - k * 0.1), by + bw * 0.42, { color: '#ffe1a6', w: 2, a: as * 0.7, p: eout(seg(t, 4.0 + k * 0.1, 0.6)), head: 12 });
+});
+
+// ======================= timeline / recording =======================
+const OFFS = []; { let a = 0; for (const s of S) { OFFS.push(a); a += s.dur; } }
+const TOTAL = S.reduce((a, s) => a + s.dur, 0);
+function drawAt(T) {
+  let k = S.length - 1; for (let i = 0; i < S.length; i++) if (T < OFFS[i] + S[i].dur) { k = i; break; }
+  const t = T - OFFS[k];
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = C.bg; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.setTransform(ctx.canvas.width / W, 0, 0, ctx.canvas.height / H, 0, 0);
+  // subtle vignette + grain-free background glow
+  S[k].fn(t);
+  // transition: amber wipe across scene boundaries (last 0.5 s of a scene, first 0.5 s of the next)
+  if (t > S[k].dur - 0.45 && k < S.length - 1) wipe(t, S[k].dur - 0.45, 0.9);
+  if (t < 0.45 && k > 0) wipe(t + 0.45, 0, 0.9);
+  return { scene: S[k].name, t };
+}
+window.MG = { S, OFFS, TOTAL, drawAt, prepare, USED, W, H };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
+<script>
+const cv = document.getElementById('c'); ctx = cv.getContext('2d');
+const P = s => document.getElementById('p').textContent = s;
+const tick = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0); });
+let ready = false, last = null;
+async function init() {
+  P('simulating…'); await tick(); MG.prepare();
+  // dry run to collect every string, then make sure all glyphs are loaded
+  for (let T = 0; T < MG.TOTAL; T += 0.25) MG.drawAt(T);
+  const byFont = {}; for (const k of MG.USED) { const [f, s] = k.split('|'); (byFont[f] = byFont[f] || new Set()).add(s); }
+  const fam = { sans: ['400 40px "Noto Sans SC"', '700 40px "Noto Sans SC"'], serif: ['700 40px "Noto Serif SC"'], math: ['400 40px "Noto Serif"', 'italic 400 40px "Noto Serif"', '700 40px "Noto Serif"'] };
+  for (const f in byFont) { const text = [...byFont[f]].join(''); for (const spec of fam[f] || []) await document.fonts.load(spec, text); }
+  await document.fonts.ready; MG.USED.clear(); ready = true; P('ready ' + MG.TOTAL.toFixed(1) + 's'); MG.drawAt(0);
+}
+const initP = init();
+window.show = T => { const r = MG.drawAt(T); P(r.scene + ' ' + r.t.toFixed(2)); return r; };
+window.sheet = async (times, cols = 3) => { await initP; const w = 640, h = 360, rows = Math.ceil(times.length / cols); const s = new OffscreenCanvas(w * cols, h * rows), x = s.getContext('2d');
+  for (let i = 0; i < times.length; i++) { MG.drawAt(times[i]); x.drawImage(cv, (i % cols) * w, Math.floor(i / cols) * h, w, h); x.fillStyle = '#fff'; x.font = '18px sans-serif'; x.fillText(times[i].toFixed(1), (i % cols) * w + 6, Math.floor(i / cols) * h + 20); }
+  const b = await s.convertToBlob({ type: 'image/jpeg', quality: 0.9 }); const im = document.getElementById('sh') || Object.assign(document.body.appendChild(document.createElement('img')), { id: 'sh' });
+  im.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000'; im.src = URL.createObjectURL(b); im.hidden = false; return true; };
+window.unsheet = () => { const im = document.getElementById('sh'); if (im) im.hidden = true; };
+window.st = { f: 0, n: 0, done: false, err: null, size: 0 };
+window.record = async (opt = {}) => { await initP; const Wd = opt.w || 2560, Hd = opt.h || 1440; cv.width = Wd; cv.height = Hd;
+  const n = Math.round(MG.TOTAL * 30); Object.assign(st, { f: 0, n, done: false, err: null });
+  const target = new Mp4Muxer.ArrayBufferTarget(); const mux = new Mp4Muxer.Muxer({ target, video: { codec: 'avc', width: Wd, height: Hd, frameRate: 30 }, fastStart: 'in-memory' });
+  const enc = new VideoEncoder({ output: (c, m) => mux.addVideoChunk(c, m), error: e => st.err = String(e) });
+  enc.configure({ codec: 'avc1.640034', width: Wd, height: Hd, bitrate: opt.bitrate || 30e6, framerate: 30, hardwareAcceleration: 'prefer-hardware', latencyMode: 'quality' });
+  for (let f = 0; f < n; f++) { MG.drawAt(f / 30); const vf = new VideoFrame(cv, { timestamp: Math.round(f * 1e6 / 30), duration: Math.round(1e6 / 30) }); enc.encode(vf, { keyFrame: f % 60 === 0 }); vf.close(); st.f = f + 1;
+    while (enc.encodeQueueSize > 8) await tick(); if (f % 15 === 0) { P('rec ' + f + '/' + n); await tick(); } }
+  await enc.flush(); mux.finalize(); last = new Blob([target.buffer], { type: 'video/mp4' }); st.size = last.size; st.done = true; P('done ' + (last.size / 1e6).toFixed(1) + ' MB'); cv.width = 1920; cv.height = 1080; return last.size; };
+window.download = async name => { const url = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(last); }); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); return url.length; };
+</script>
