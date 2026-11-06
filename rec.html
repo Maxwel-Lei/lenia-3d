@@ -831,7 +831,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__lenia = { cam: o => { if (o.yaw != null) yaw = o.yaw; if (o.pitch != null) pitch = o.pitch; if (o.dist != null) dist = o.dist; if (o.spin != null) autoSpin = o.spin; return { yaw, pitch, dist }; }, resize, gl,  simStep, choose, census, relight, params, setMode, setWorld, runSim, get budget() { return budget; }, get steps() { return steps; } };
+  window.__lenia = { snapFollow: () => { const m = census(); follow = followTarget.slice(); return { m, follow: follow.slice(), n: lastMerged.length }; }, cam: o => { if (o.yaw != null) yaw = o.yaw; if (o.pitch != null) pitch = o.pitch; if (o.dist != null) dist = o.dist; if (o.spin != null) autoSpin = o.spin; return { yaw, pitch, dist }; }, resize, gl,  simStep, choose, census, relight, params, setMode, setWorld, runSim, get budget() { return budget; }, get steps() { return steps; } };
 })();
 </script>
 
@@ -872,8 +872,10 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     // warm-up: simulate, keep the display loop (census, follow, trails) running every few steps
     const warm = c.warm || 0, k = c.k || 2;
     for (let i = 0; i < warm; i += k) { step(k); drive(); if (i % (k * 8) === 0) await tick(); }
-    drive(); drive();
-    return { steps: L().steps };
+    if (c.params2) Object.assign(L().params, c.params2);
+    const sf = L().snapFollow();
+    for (let i = 0; i < 30; i++) { drive(); if (i % 6 === 0) await tick(); }
+    return { steps: L().steps, sf };
   }
 
   async function record(c) {
