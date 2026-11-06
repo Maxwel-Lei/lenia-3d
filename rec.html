@@ -921,7 +921,7 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
         const w = await h.createWritable(); await w.write(c.blob); await w.close(); msg(`已保存 ${name}.mp4`); return;
       } catch (e) { if (e.name === 'AbortError') return; }
     }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(c.blob); a.download = name + '.mp4'; document.body.appendChild(a); a.click(); a.remove();
+    await download(name);
     msg(`已下载 ${name}.mp4`);
   }
 
@@ -954,7 +954,58 @@ const SPECIES = [{"code": "4Gu3l", "name": "Triguttome labens", "zh": "丙雫球
     im.src = s.toDataURL('image/jpeg', 0.9); im.hidden = false; return true;
   }
   const unsheet = () => { const im = document.getElementById('sheetImg'); if (im) im.hidden = true; };
-  window.__rec = { sheet, unsheet, setup, record, save, saveAuto, st, clips, step, drive, get dir() { return dir && dir.name; },
+
+  // record several shots back to back into ONE mp4 (one save dialog for the whole reel)
+  async function reel(shots, opt = {}) {
+    if (st.busy) throw new Error('busy');
+    const W = opt.w || 2560, H = opt.h || 1440;
+    Object.assign(st, { busy: true, frame: 0, frames: shots.reduce((a, s) => a + s.frames, 0), name: opt.name || 'reel', err: null, shot: '' });
+    const log = [];
+    try {
+      window.__fixed = [W, H]; L().resize();
+      const off = new OffscreenCanvas(W, H), x = off.getContext('2d');
+      const target = new Mp4Muxer.ArrayBufferTarget();
+      const mux = new Mp4Muxer.Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: 30 }, fastStart: 'in-memory' });
+      const enc = new VideoEncoder({ output: (ch, meta) => mux.addVideoChunk(ch, meta), error: e => { st.err = String(e); } });
+      enc.configure({ codec: 'avc1.640034', width: W, height: H, bitrate: opt.bitrate || 45e6, framerate: 30, hardwareAcceleration: 'prefer-hardware', latencyMode: 'quality' });
+      const cv = document.getElementById('c'), ov = document.getElementById('ov');
+      let g = 0;
+      for (const s of shots) {
+        st.shot = s.name; msg('准备 ' + s.name);
+        await setup(Object.assign({ w: W, h: H }, s));
+        const path = s.camPath ? new Function('f', 'return ' + s.camPath) : null;
+        const ppath = s.parPath ? new Function('f', 'return ' + s.parPath) : null;
+        log.push({ name: s.name, start: g, frames: s.frames });
+        for (let f = 0; f < s.frames; f++, g++) {
+          if (path) L().cam(path(f));
+          if (ppath) Object.assign(L().params, ppath(f));
+          step(s.k || 2); drive();
+          x.drawImage(cv, 0, 0, W, H); if (ov && ov.width && s.overlay !== false) x.drawImage(ov, 0, 0, W, H);
+          const vf = new VideoFrame(off, { timestamp: Math.round(g * 1e6 / 30), duration: Math.round(1e6 / 30) });
+          enc.encode(vf, { keyFrame: f === 0 || f % 60 === 0 }); vf.close();
+          st.frame = g + 1;
+          while (enc.encodeQueueSize > 8) await tick();
+          if (f % 10 === 0) { msg(`${s.name}: ${f}/${s.frames}`); await tick(); }
+        }
+      }
+      await enc.flush(); mux.finalize();
+      const blob = new Blob([target.buffer], { type: 'video/mp4' });
+      const name = opt.name || 'reel';
+      clips.push({ name, blob, log });
+      st.log = log; st.size = blob.size;
+      msg(`${name} 完成 ${(blob.size / 1e6).toFixed(1)} MB`);
+      return { size: blob.size, log };
+    } catch (e) { st.err = String(e && e.stack || e); msg('错误 ' + e); throw e; }
+    finally { st.busy = false; }
+  }
+  // download through a data: URL (blob: downloads come out empty in this browser pane)
+  async function download(name, fname) {
+    const c = clips.find(q => q.name === name);
+    const url = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(c.blob); });
+    const a = document.createElement('a'); a.href = url; a.download = fname || (name + '.mp4'); document.body.appendChild(a); a.click(); a.remove();
+    return url.length;
+  }
+  window.__rec = { reel, download, sheet, unsheet, setup, record, save, saveAuto, st, clips, step, drive, get dir() { return dir && dir.name; },
     still: () => { drive(); return true; }, clean: on => document.body.classList.toggle('clean', on) };
 })();
 
